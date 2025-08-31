@@ -11,7 +11,8 @@ import {
   ListItem,
   ListItemText,
   Link,
-  CircularProgress
+  CircularProgress,
+  Divider
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axios from 'axios';
@@ -19,7 +20,7 @@ import axios from 'axios';
 const API_BASE = 'http://127.0.0.1:8000';
 
 export default function CalendarView() {
-  const [matchesByDate, setMatchesByDate] = useState({});
+  const [matchesByMonth, setMatchesByMonth] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,17 +28,17 @@ export default function CalendarView() {
       try {
         const response = await axios.get(`${API_BASE}/api/matches`);
         const grouped = response.data.reduce((acc, match) => {
-          const date = match.date ? new Date(match.date).toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
+          if (!match.date) return acc;
+          const date = new Date(match.date);
+          const month = date.toLocaleDateString('es-ES', {
             month: 'long',
-            day: 'numeric'
-          }) : "Sin fecha";
-          if (!acc[date]) acc[date] = [];
-          acc[date].push(match);
+            year: 'numeric'
+          });
+          if (!acc[month]) acc[month] = [];
+          acc[month].push(match);
           return acc;
         }, {});
-        setMatchesByDate(grouped);
+        setMatchesByMonth(grouped);
       } catch (error) {
         console.error("Error al cargar calendario", error);
       } finally {
@@ -51,32 +52,35 @@ export default function CalendarView() {
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h4" gutterBottom>📅 Calendario de Partidos</Typography>
-      {Object.keys(matchesByDate).length === 0 ? (
+      <Typography variant="h4" gutterBottom>📅 Calendario Mensual</Typography>
+      {Object.keys(matchesByMonth).length === 0 ? (
         <Typography>No hay partidos programados</Typography>
       ) : (
-        Object.keys(matchesByDate).map(date => (
-          <Accordion key={date}>
+        Object.keys(matchesByMonth).map(month => (
+          <Accordion key={month}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">{date}</Typography>
+              <Typography variant="h6" textTransform="capitalize">{month}</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <List>
-                {matchesByDate[date].map(match => (
-                  <ListItem
-                    button
-                    key={match.id}
-                    component={Link}
-                    to={`/match/${match.id}`}
-                    sx={{ borderRadius: 1, mb: 1, bgcolor: 'action.hover' }}
-                  >
-                    <ListItemText
-                      primary={`${match.home_team.name} ${match.home_score ?? '-'} - ${match.away_score ?? '-'} ${match.away_team.name}`}
-                      secondary={`Ronda ${match.round} | ${match.facility} | ${match.status}`}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+              {matchesByMonth[month].map(match => {
+                const date = new Date(match.date);
+                return (
+                  <div key={match.id}>
+                    <ListItem
+                      button
+                      component={Link}
+                      to={`/match/${match.id}`}
+                      sx={{ borderRadius: 1, mb: 1, bgcolor: 'action.hover' }}
+                    >
+                      <ListItemText
+                        primary={`${match.home_team.name} ${match.home_score ?? '-'} - ${match.away_score ?? '-'} ${match.away_team.name}`}
+                        secondary={`${date.toLocaleDateString('es-ES')} | ${match.facility} | ${match.status}`}
+                      />
+                    </ListItem>
+                    <Divider />
+                  </div>
+                );
+              })}
             </AccordionDetails>
           </Accordion>
         ))

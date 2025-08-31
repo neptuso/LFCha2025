@@ -20,7 +20,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://lfcha2025-1.onrender.com"  # ✅ Frontend en Render
+        "https://lfcha2025-f2.onrender.com"  # ✅ Frontend en Render 
     ],
     allow_credentials=True,
     allow_methods=["*"],

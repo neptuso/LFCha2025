@@ -39,4 +39,20 @@ function App() {
   );
 }
 
+const theme = createTheme({
+  palette: {
+    mode: darkMode ? 'dark' : 'light',
+    primary: {
+      main: '#1976d2' // Azul de Tiro Federal
+    },
+    secondary: {
+      main: '#dc004e' // Rojo para destacados
+    }
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: { fontWeight: 600 }
+  }
+});
+
 export default App;
