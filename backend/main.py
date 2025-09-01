@@ -5,12 +5,7 @@ from database import SessionLocal, engine
 import models
 from models import Base
 from services.sync_service import sync_matches, sync_events
-
-# Importar routers
-from api.standings import router as standings_router
-from api.matches import router as matches_router
-from api.match_detail import router as match_detail_router
-# from api.top_scorers import router as top_scorers_router  # ⚠️ Descomenta solo si el archivo existe y funciona
+from api import standings, matches, match_detail, top_scorers  # ✅ Importar top_scorers
 
 app = FastAPI(title="Liga Chajarí by Nep - API")
 
@@ -20,7 +15,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://lfcha2025-f2.onrender.com"  # ✅ Frontend en Render 
+        "https://lfcha2025-f2.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -66,7 +61,7 @@ def home():
     return {"message": "Bienvenido a Liga Chajarí by Nep - Backend activo"}
 
 # Incluir routers
-app.include_router(standings_router, prefix="/api")
-app.include_router(matches_router, prefix="/api")
-app.include_router(match_detail_router, prefix="/api")
-# app.include_router(top_scorers_router, prefix="/api")  # ⚠️ Descomenta cuando esté listo
+app.include_router(standings.router, prefix="/api")
+app.include_router(matches.router, prefix="/api")
+app.include_router(match_detail.router, prefix="/api")
+app.include_router(top_scorers.router, prefix="/api")  # ✅ Correcto
