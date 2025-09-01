@@ -1,5 +1,5 @@
 INFO:     Will watch for changes in these directories: ['C:\\nep\\proyectos\\python\\2025\\liga de futbol\\version13_Qw\\backend']
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Uvicorn running on https://lfcha2025.onrender.com (Press CTRL+C to quit)
 INFO:     Started reloader process [14068] using StatReload
 INFO:     Started server process [14972]
 INFO:     Waiting for application startup.

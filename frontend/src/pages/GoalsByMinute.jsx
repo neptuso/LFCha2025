@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://lfcha2025.onrender.com';
 
 export default function GoalsByMinute() {
   const [data, setData] = useState([]);

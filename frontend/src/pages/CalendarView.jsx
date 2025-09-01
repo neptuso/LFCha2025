@@ -17,7 +17,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://lfcha2025.onrender.com';
 
 export default function CalendarView() {
   const [matchesByMonth, setMatchesByMonth] = useState({});
