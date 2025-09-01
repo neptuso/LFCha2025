@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = 'https://lfcha2025.onrender.com';
 
 export default function MatchDetail() {
   const { id } = useParams();
