@@ -1,26 +1,22 @@
-# backend/api/matches.py
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, aliased
 from database import get_db
 from models import Match, Team
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
-@router.get("/api/matches")
+@router.get("/matches")
 def get_matches(
     date: str = Query(None, description="Filtrar por fecha (YYYY-MM-DD)"),
     team_id: int = Query(None, description="Filtrar por equipo (team_id_comet)"),
     db: Session = Depends(get_db)
 ):
-    # Crear alias para los equipos
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
 
     query = db.query(Match).join(HomeTeam, Match.home_team_id == HomeTeam.id).join(AwayTeam, Match.away_team_id == AwayTeam.id)
 
-    # Filtrar por fecha
     if date:
         try:
             target_date = datetime.strptime(date, "%Y-%m-%d")
@@ -29,16 +25,11 @@ def get_matches(
         except ValueError:
             return {"error": "Formato de fecha inválido. Usa YYYY-MM-DD"}
 
-    # Filtrar por equipo
     if team_id:
-        # Verificar que el equipo existe
         team_exists = db.query(Team).filter(Team.team_id_comet == team_id).first()
         if not team_exists:
             return {"error": f"Equipo con team_id_comet={team_id} no encontrado en la base de datos"}
-
-        query = query.filter(
-            (HomeTeam.team_id_comet == team_id) | (AwayTeam.team_id_comet == team_id)
-        )
+        query = query.filter((HomeTeam.team_id_comet == team_id) | (AwayTeam.team_id_comet == team_id))
 
     matches = query.order_by(Match.date).all()
 
