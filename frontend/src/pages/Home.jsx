@@ -1,12 +1,7 @@
-// frontend/src/pages/Home.jsx
-
 import React, { useEffect, useState } from 'react';
 import StandingsTable from '../components/StandingsTable';
 import { fetchStandings } from '../services/api';
-
-<Box sx={{ width: '100%', overflowX: 'auto', padding: 2 }}>
-  <StandingsTable standings={standings} />
-</Box>
+import { Box } from '@mui/material';
 
 export default function Home() {
   const [standings, setStandings] = useState([]);
@@ -34,7 +29,9 @@ export default function Home() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Tabla de Posiciones - Primera División 2025</h2>
-      <StandingsTable standings={standings} />
+      <Box sx={{ width: '100%', overflowX: 'auto' }}>
+        <StandingsTable standings={standings} />
+      </Box>
     </div>
   );
 }
