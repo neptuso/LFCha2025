@@ -7,7 +7,7 @@ import MatchesPage from './pages/Matches';
 import MatchDetail from './pages/MatchDetail';
 import TopScorers from './pages/TopScorers';
 import ThemeToggle from './components/ThemeToggle';
-import Navbar from './component/Navbar';
+import Navbar from './components/Navbar';
 import CalendarView from './pages/CalendarView';
 
 // Tema único, definido fuera de App()
