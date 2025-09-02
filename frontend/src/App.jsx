@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import React, { useState } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -10,32 +10,25 @@ import ThemeToggle from './components/ThemeToggle';
 import Navbar from './components/Navbar';
 import CalendarView from './pages/CalendarView';
 
-// Tema único, definido fuera de App()
-const theme = createTheme({
-  palette: {
-    mode: darkMode ? 'dark' : 'light',
-    primary: {
-      main: '#1976d2' // Azul de Tiro Federal
-    },
-    secondary: {
-      main: '#dc004e' // Rojo para destacados
-    }
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: { fontWeight: 600 }
-  },
-  components: {
-    MuiTableCell: {
-      styleOverrides: {
-        root: { padding: '6px 16px'}
-      }
-    }
-  }
-});
-
 function App() {
   const [darkMode, setDarkMode] = useState(false);
+
+  // Tema único, definido dentro de App()
+  const theme = createTheme({
+    palette: {
+      mode: darkMode ? 'dark' : 'light',
+      primary: {
+        main: '#1976d2' // Azul de Tiro Federal
+      },
+      secondary: {
+        main: '#dc004e' // Rojo para destacados
+      }
+    },
+    typography: {
+      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+      h4: { fontWeight: 600 }
+    }
+  });
 
   return (
     <ThemeProvider theme={theme}>
