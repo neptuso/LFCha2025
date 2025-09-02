@@ -10,6 +10,25 @@ import ThemeToggle from './components/ThemeToggle';
 import Navbar from './components/Navbar';
 import CalendarView from './pages/CalendarView';
 
+const theme = createTheme({
+  palette: {
+    mode: darkMode ? 'dark' : 'light',
+    primary: { main: '#1976d2' }, // Azul de Tiro Federal
+    secondary: { main: '#dc004e' } // Rojo para destacados
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: { fontWeight: 600 }
+  },
+  components: {
+    MuiTableCell: {
+      styleOverrides: {
+        root: { padding: '6px 16px' }
+      }
+    }
+  }
+});
+
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
@@ -49,3 +68,4 @@ function App() {
 }
 
 export default App;
+

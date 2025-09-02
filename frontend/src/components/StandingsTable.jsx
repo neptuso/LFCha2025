@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableRow, Paper, TableContainer } from '@mui/material';
 
-// Mapeo de nombres de equipos a nombres de archivos de escudos
+// Mapeo de nombres de equipos a archivos de escudos
 const getShieldUrl = (teamName) => {
   const shields = {
     'TIRO FEDERAL (CHAJARI)': '/shields/tiro_federal.png',
@@ -25,7 +25,7 @@ const getShieldUrl = (teamName) => {
 export default function StandingsTable({ standings }) {
   return (
     <TableContainer component={Paper}>
-      <Table size="small">
+      <Table size="small" sx={{ minWidth: 600 }}>
         <TableHead>
           <TableRow>
             <TableCell>#</TableCell>

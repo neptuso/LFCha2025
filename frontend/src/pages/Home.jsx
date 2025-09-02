@@ -4,6 +4,10 @@ import React, { useEffect, useState } from 'react';
 import StandingsTable from '../components/StandingsTable';
 import { fetchStandings } from '../services/api';
 
+<Box sx={{ width: '100%', overflowX: 'auto', padding: 2 }}>
+  <StandingsTable standings={standings} />
+</Box>
+
 export default function Home() {
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
