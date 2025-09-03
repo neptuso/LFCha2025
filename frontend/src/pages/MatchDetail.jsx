@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
+import { useParams, Link } from 'react-router-dom';
+import { Box, Typography, CircularProgress, List, ListItem, ListItemText, Divider } from '@mui/material';
 import axios from 'axios';
 
 const API_BASE = 'https://lfcha2025.onrender.com';
@@ -8,15 +8,17 @@ const API_BASE = 'https://lfcha2025.onrender.com';
 export default function MatchDetail() {
   const { id } = useParams();
   const [match, setMatch] = useState(null);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         const response = await axios.get(`${API_BASE}/api/match-detail/${id}`);
-        setMatch(response.data);
+        setMatch(response.data.match);
+        setEvents(response.data.events);
       } catch (error) {
-        console.error("Error al cargar el detalle", error);
+        console.error("Error al cargar detalle del partido", error);
       } finally {
         setLoading(false);
       }
@@ -24,36 +26,44 @@ export default function MatchDetail() {
     load();
   }, [id]);
 
-  if (loading) return <div>Cargando detalle del partido...</div>;
-  if (!match) return <div>Partido no encontrado</div>;
+  if (loading) return <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />;
+
+  if (!match) return <Typography>Partido no encontrado</Typography>;
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h4" gutterBottom align="center">
-        {match.match.home_team} {match.match.home_score} - {match.match.away_score} {match.match.away_team}
+      <Link to="/calendar" style={{ textDecoration: 'none' }}>
+        ← Volver al calendario
+      </Link>
+      <Typography variant="h4" gutterBottom>
+        {match.home_team} vs {match.away_team}
       </Typography>
-      <Typography variant="body1" color="text.secondary" align="center" gutterBottom>
-        {new Date(match.match.date).toLocaleString()} | Ronda {match.match.round} | {match.match.facility}
+      <Typography variant="h6" color="textSecondary">
+        {match.date ? new Date(match.date).toLocaleDateString('es-ES') : 'Sin fecha'} | {match.facility}
+      </Typography>
+      <Typography variant="h5" sx={{ my: 2 }}>
+        {match.home_score} - {match.away_score}
       </Typography>
 
-      <Divider sx={{ my: 3 }} />
-
-      <Typography variant="h6" sx={{ mb: 2 }}>Línea de tiempo</Typography>
+      <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>📋 Eventos del partido</Typography>
       <List>
-        {match.events.map((event, index) => (
-          <ListItem key={index} divider>
-            <Chip
-              label={`${event.minute}' ${event.phase}`}
-              color={event.is_home ? "primary" : "default"}
-              size="small"
-              sx={{ mr: 2 }}
-            />
-            <ListItemText
-              primary={`${event.type}${event.sub_type ? ` (${event.sub_type})` : ''}`}
-              secondary={`${event.player} - ${event.team}`}
-            />
+        {events.length === 0 ? (
+          <ListItem>
+            <ListItemText primary="No hay eventos registrados" />
           </ListItem>
-        ))}
+        ) : (
+          events.map((event, index) => (
+            <div key={index}>
+              <ListItem>
+                <ListItemText
+                  primary={`${event.minute}' ${event.type}`}
+                  secondary={`${event.player} (${event.team}) ${event.sub_type ? `(${event.sub_type})` : ''}`}
+                />
+              </ListItem>
+              <Divider />
+            </div>
+          ))
+        )}
       </List>
     </Box>
   );

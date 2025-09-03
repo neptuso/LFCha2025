@@ -1,5 +1,3 @@
-// frontend/src/pages/CalendarView.jsx
-
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -12,7 +10,8 @@ import {
   ListItemText,
   Link,
   CircularProgress,
-  Divider
+  Divider,
+  Alert
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axios from 'axios';
@@ -22,25 +21,30 @@ const API_BASE = 'https://lfcha2025.onrender.com';
 export default function CalendarView() {
   const [matchesByMonth, setMatchesByMonth] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const response = await axios.get(`${API_BASE}/api/matches`);
         const grouped = response.data.reduce((acc, match) => {
           if (!match.date) return acc;
           const date = new Date(match.date);
-          const month = date.toLocaleDateString('es-ES', {
+          const monthYear = date.toLocaleDateString('es-ES', {
             month: 'long',
             year: 'numeric'
-          });
-          if (!acc[month]) acc[month] = [];
-          acc[month].push(match);
+          }).toUpperCase();
+
+          if (!acc[monthYear]) acc[monthYear] = [];
+          acc[monthYear].push(match);
           return acc;
         }, {});
         setMatchesByMonth(grouped);
-      } catch (error) {
-        console.error("Error al cargar calendario", error);
+      } catch (err) {
+        console.error("Error al cargar calendario", err);
+        setError("No se pudo cargar el calendario. Inténtalo más tarde.");
       } finally {
         setLoading(false);
       }
@@ -48,37 +52,102 @@ export default function CalendarView() {
     load();
   }, []);
 
-  if (loading) return <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />;
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ padding: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  const months = Object.keys(matchesByMonth);
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h4" gutterBottom>📅 Calendario Mensual</Typography>
-      {Object.keys(matchesByMonth).length === 0 ? (
-        <Typography>No hay partidos programados</Typography>
+      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
+         Calendario Mensual
+      </Typography>
+
+      {months.length === 0 ? (
+        <Typography>No hay partidos programados.</Typography>
       ) : (
-        Object.keys(matchesByMonth).map(month => (
-          <Accordion key={month}>
+        months.map((monthYear) => (
+          <Accordion key={monthYear} defaultExpanded={true}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6" textTransform="capitalize">{month}</Typography>
+              <Typography variant="h6">
+                {/* Capitaliza solo la primera letra del mes */}
+                {monthYear.charAt(0).toUpperCase() + monthYear.slice(1).toLowerCase()}
+              </Typography>
             </AccordionSummary>
-            <AccordionDetails>
-              {matchesByMonth[month].map(match => {
-                const date = new Date(match.date);
+            <AccordionDetails sx={{ pt: 0 }}>
+              {matchesByMonth[monthYear].map((match) => {
+                // ✅ Validar que el partido tenga id
+                if (!match || !match.id) return null;
+
+                const dateObj = new Date(match.date);
+                const formattedDate = dateObj.toLocaleDateString('es-ES', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short'
+                });
+                const timeString = dateObj.toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+
                 return (
-                  <div key={match.id}>
+                  <React.Fragment key={match.id}>
                     <ListItem
-                      button
                       component={Link}
                       to={`/match/${match.id}`}
-                      sx={{ borderRadius: 1, mb: 1, bgcolor: 'action.hover' }}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 1,
+                        bgcolor: 'action.hover',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        '&:hover': {
+                          bgcolor: 'action.selected',
+                        }
+                      }}
                     >
                       <ListItemText
-                        primary={`${match.home_team.name} ${match.home_score ?? '-'} - ${match.away_score ?? '-'} ${match.away_team.name}`}
-                        secondary={`${date.toLocaleDateString('es-ES')} | ${match.facility} | ${match.status}`}
+                        primary={
+                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                            {match.home_team.name} vs {match.away_team.name}
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            <Typography component="span" variant="body2" color="textPrimary">
+                              {formattedDate} - {timeString}
+                            </Typography>
+                            <br />
+                            <Typography component="span" variant="body2" color="textSecondary">
+                              {match.facility} | {match.status} | Ronda: {match.round || 'N/A'}
+                            </Typography>
+                            {(match.home_score !==null || match.away_score!==null) && (
+                              <>
+                                <br />
+                                <Typography component="span" variant="body2" color="primary">
+                                  Resultado: {match.home_score ?? '?'} - {match.away_score ?? '?'}
+                                </Typography>
+                              </>
+                            )}
+                          </>
+                        }
                       />
                     </ListItem>
-                    <Divider />
-                  </div>
+                    <Divider component="li" />
+                  </React.Fragment>
                 );
               })}
             </AccordionDetails>
