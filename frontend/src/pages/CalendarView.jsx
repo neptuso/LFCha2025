@@ -22,9 +22,18 @@ export default function CalendarView() {
   const [matchesByMonth, setMatchesByMonth] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // ✅ Estado para cachear los datos
+  const [cachedData, setCachedData] = useState(null);
 
   useEffect(() => {
     const load = async () => {
+      // ✅ Si ya tenemos datos en caché, no volvemos a cargar
+      if (cachedData) {
+        setMatchesByMonth(cachedData);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -41,6 +50,9 @@ export default function CalendarView() {
           acc[monthYear].push(match);
           return acc;
         }, {});
+
+        // ✅ Guardar en caché
+        setCachedData(grouped);
         setMatchesByMonth(grouped);
       } catch (err) {
         console.error("Error al cargar calendario", err);
@@ -50,7 +62,7 @@ export default function CalendarView() {
       }
     };
     load();
-  }, []);
+  }, [cachedData]); // ✅ Dependencia: solo vuelve a ejecutar si cachedData cambia
 
   if (loading) {
     return (
@@ -73,7 +85,7 @@ export default function CalendarView() {
   return (
     <Box sx={{ padding: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-         Calendario Mensual
+        📅 Calendario Mensual
       </Typography>
 
       {months.length === 0 ? (
@@ -83,13 +95,11 @@ export default function CalendarView() {
           <Accordion key={monthYear} defaultExpanded={true}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6">
-                {/* Capitaliza solo la primera letra del mes */}
                 {monthYear.charAt(0).toUpperCase() + monthYear.slice(1).toLowerCase()}
               </Typography>
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
               {matchesByMonth[monthYear].map((match) => {
-                // ✅ Validar que el partido tenga id
                 if (!match || !match.id) return null;
 
                 const dateObj = new Date(match.date);
@@ -105,47 +115,47 @@ export default function CalendarView() {
 
                 return (
                   <React.Fragment key={match.id}>
-                    <ListItem
-                      component={Link}
-                      to={`/match/${match.id}`}
-                      sx={{
-                        borderRadius: 2,
-                        mb: 1,
-                        bgcolor: 'action.hover',
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        '&:hover': {
-                          bgcolor: 'action.selected',
-                        }
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                            {match.home_team.name} vs {match.away_team.name}
-                          </Typography>
-                        }
-                        secondary={
-                          <>
-                            <Typography component="span" variant="body2" color="textPrimary">
-                              {formattedDate} - {timeString}
-                            </Typography>
-                            <br />
-                            <Typography component="span" variant="body2" color="textSecondary">
-                              {match.facility} | {match.status} | Ronda: {match.round || 'N/A'}
-                            </Typography>
-                            {(match.home_score !==null || match.away_score!==null) && (
-                              <>
-                                <br />
-                                <Typography component="span" variant="body2" color="primary">
-                                  Resultado: {match.home_score ?? '?'} - {match.away_score ?? '?'}
-                                </Typography>
-                              </>
-                            )}
-                          </>
-                        }
-                      />
-                    </ListItem>
+<ListItem
+  component={Link}
+  to={`/match/${match.id}`}
+  sx={{
+    borderRadius: 2,
+    mb: 1,
+    bgcolor: 'action.hover',
+    textDecoration: 'none',
+    color: 'inherit',
+    '&:hover': {
+      bgcolor: 'action.selected',
+    }
+  }}
+>
+  <ListItemText
+    primary={
+      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+        {match.home_team.name} vs {match.away_team.name}
+      </Typography>
+    }
+    secondary={
+      <>
+        <Typography component="span" variant="body2" color="textPrimary">
+          {formattedDate} - {timeString}
+        </Typography>
+        <br />
+        <Typography component="span" variant="body2" color="textSecondary">
+          {match.facility} | {match.status} | Ronda: {match.round || 'N/A'}
+        </Typography>
+        {(match.home_score !==null || match.away_score!==null) && (
+          <>
+            <br />
+            <Typography component="span" variant="body2" color="primary">
+              Resultado: {match.home_score ?? '?'} - {match.away_score ?? '?'}
+            </Typography>
+          </>
+        )}
+      </>
+    }
+  />
+</ListItem>
                     <Divider component="li" />
                   </React.Fragment>
                 );

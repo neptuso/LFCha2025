@@ -9,6 +9,11 @@ import TopScorers from './pages/TopScorers';
 import ThemeToggle from './components/ThemeToggle';
 import Navbar from './components/Navbar';
 import CalendarView from './pages/CalendarView';
+import AlmanacView from './pages/AlmanacView';
+import GoalsByMinute from './pages/GoalsByMinute';
+import TopScorersByTeam from './pages/TopScorersByTeam';
+import CardsByTeam from './pages/CardsByTeam';
+import StreaksView from './pages/StreaksView';
 
 // ✅ Definir el tema dentro de App(), después de darkMode
 function App() {
@@ -50,6 +55,11 @@ function App() {
           <Route path="/calendar" element={<CalendarView />} />
           <Route path="/match/:id" element={<MatchDetail />} />
           <Route path="/top-scorers" element={<TopScorers />} />
+          <Route path="/almanac" element={<AlmanacView />} />
+          <Route path="/stats/goals-by-minute" element={<GoalsByMinute />} />
+          <Route path="/stats/top-scorers-by-team" element={<TopScorersByTeam />} />
+          <Route path="/stats/cards-by-team" element={<CardsByTeam />} />
+          <Route path="/stats/streaks" element={<StreaksView />} />
         </Routes>
       </Router>
     </ThemeProvider>
