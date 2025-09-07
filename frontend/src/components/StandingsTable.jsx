@@ -1,3 +1,4 @@
+// tabla de posiciones
 import { Table, TableBody, TableCell, TableHead, TableRow, Paper, TableContainer } from '@mui/material';
 
 // Mapeo de nombres de equipos a archivos de escudos

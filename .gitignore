@@ -13,3 +13,11 @@ build/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Archivos de respaldo de la sincronización
+backend/services/sync_service_30B.py
+backend/services/sync_service_ba.py
+
+# Archivos de entorno con claves
+frontend/.env.development
+frontend/.env.production

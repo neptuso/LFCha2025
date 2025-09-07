@@ -1,29 +1,43 @@
 # backend/services/standings_service.py
-
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import Match, Team, Competition
+from models import Match, Team, Competition, Event
 
 def calculate_standings(db: Session, competition_id: int):
+    """
+    Calcula la tabla de posiciones para una competición específica
+    """
+    # --- LOGS DE DEPURACIÓN ---
+    print("-" * 50)
+    print(f"[Debug] Se ha llamado a calculate_standings con competition_id: {competition_id}")
+
+    # ✅ Verificar que la competición exista
     competition = db.query(Competition).filter(Competition.id == competition_id).first()
     if not competition:
-        return []
+        print(f"[Debug] ERROR: No se encontró ninguna competición con el id {competition_id}.")
+        return {"error": f"Competición con id={competition_id} no encontrada"}
+    
+    print(f"[Debug] Competición encontrada: '{competition.name}' (Temporada: {competition.season})")
 
-    matches = db.query(Match).filter(
-        Match.competition_id == competition_id,
-        Match.home_score.isnot(None),
-        Match.away_score.isnot(None)
-    ).all()
+    # ✅ Filtrar solo partidos de ESA competición
+    matches = db.query(Match).filter(Match.competition_id == competition_id).all()
+    print(f"[Debug] La consulta a la base de datos encontró {len(matches)} partidos para esta competición.")
+    print("-" * 50)
 
+
+    # Diccionario para acumular datos por equipo
     standings = {}
 
     for match in matches:
+        if match.home_score is None or match.away_score is None:
+            continue  # Partido no jugado
+
         home_team = db.query(Team).filter(Team.id == match.home_team_id).first()
         away_team = db.query(Team).filter(Team.id == match.away_team_id).first()
 
         if not home_team or not away_team:
             continue
 
+        # Inicializar equipos si no existen
         for team in [home_team, away_team]:
             if team.id not in standings:
                 standings[team.id] = {

@@ -16,18 +16,17 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import axios from 'axios';
 
-const API_BASE = 'https://lfcha2025.onrender.com';
+//const API_BASE = 'https://lfcha2025.onrender.com';
+const API_BASE = 'http://localhost:8000';
 
 export default function CalendarView() {
   const [matchesByMonth, setMatchesByMonth] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // ✅ Estado para cachear los datos
   const [cachedData, setCachedData] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      // ✅ Si ya tenemos datos en caché, no volvemos a cargar
       if (cachedData) {
         setMatchesByMonth(cachedData);
         setLoading(false);
@@ -38,9 +37,15 @@ export default function CalendarView() {
         setLoading(true);
         setError(null);
         const response = await axios.get(`${API_BASE}/api/matches`);
-        const grouped = response.data.reduce((acc, match) => {
+        
+        // ✅ 1. Ordenar partidos por fecha DESC (más reciente primero)
+        const sortedMatches = [...response.data].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // ✅ 2. Agrupar por mes/año y ordenar meses DESC
+        const grouped = sortedMatches.reduce((acc, match) => {
           if (!match.date) return acc;
           const date = new Date(match.date);
+          // Formato: "marzo 2025"
           const monthYear = date.toLocaleDateString('es-ES', {
             month: 'long',
             year: 'numeric'
@@ -51,9 +56,24 @@ export default function CalendarView() {
           return acc;
         }, {});
 
-        // ✅ Guardar en caché
-        setCachedData(grouped);
-        setMatchesByMonth(grouped);
+        // ✅ 3. Ordenar meses por fecha (más reciente primero)
+        const sortedMonths = Object.keys(grouped).sort((a, b) => {
+          const [monthA, yearA] = a.split(' ');
+          const [monthB, yearB] = b.split(' ');
+          const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+          const indexA = months.indexOf(monthA.toLowerCase());
+          const indexB = months.indexOf(monthB.toLowerCase());
+          return new Date(yearB, indexB) - new Date(yearA, indexA);
+        });
+
+        // ✅ 4. Reconstruir objeto con meses ordenados
+        const orderedGrouped = {};
+        sortedMonths.forEach(month => {
+          orderedGrouped[month] = grouped[month];
+        });
+
+        setCachedData(orderedGrouped);
+        setMatchesByMonth(orderedGrouped);
       } catch (err) {
         console.error("Error al cargar calendario", err);
         setError("No se pudo cargar el calendario. Inténtalo más tarde.");
@@ -62,7 +82,7 @@ export default function CalendarView() {
       }
     };
     load();
-  }, [cachedData]); // ✅ Dependencia: solo vuelve a ejecutar si cachedData cambia
+  }, [cachedData]);
 
   if (loading) {
     return (
@@ -92,9 +112,10 @@ export default function CalendarView() {
         <Typography>No hay partidos programados.</Typography>
       ) : (
         months.map((monthYear) => (
-          <Accordion key={monthYear} defaultExpanded={true}>
+          <Accordion key={monthYear} defaultExpanded={false}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6">
+                {/* Capitaliza solo la primera letra del mes */}
                 {monthYear.charAt(0).toUpperCase() + monthYear.slice(1).toLowerCase()}
               </Typography>
             </AccordionSummary>
@@ -115,47 +136,47 @@ export default function CalendarView() {
 
                 return (
                   <React.Fragment key={match.id}>
-<ListItem
-  component={Link}
-  to={`/match/${match.id}`}
-  sx={{
-    borderRadius: 2,
-    mb: 1,
-    bgcolor: 'action.hover',
-    textDecoration: 'none',
-    color: 'inherit',
-    '&:hover': {
-      bgcolor: 'action.selected',
-    }
-  }}
->
-  <ListItemText
-    primary={
-      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-        {match.home_team.name} vs {match.away_team.name}
-      </Typography>
-    }
-    secondary={
-      <>
-        <Typography component="span" variant="body2" color="textPrimary">
-          {formattedDate} - {timeString}
-        </Typography>
-        <br />
-        <Typography component="span" variant="body2" color="textSecondary">
-          {match.facility} | {match.status} | Ronda: {match.round || 'N/A'}
-        </Typography>
-        {(match.home_score !==null || match.away_score!==null) && (
-          <>
-            <br />
-            <Typography component="span" variant="body2" color="primary">
-              Resultado: {match.home_score ?? '?'} - {match.away_score ?? '?'}
-            </Typography>
-          </>
-        )}
-      </>
-    }
-  />
-</ListItem>
+                    <ListItem
+                      component={Link}
+                      to={`/match/${match.id}`}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 1,
+                        bgcolor: 'action.hover',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        '&:hover': {
+                          bgcolor: 'action.selected',
+                        }
+                      }}
+                    >
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                            {match.home_team.name} vs {match.away_team.name}
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            <Typography component="span" variant="body2" color="textPrimary">
+                              {formattedDate} - {timeString}
+                            </Typography>
+                            <br />
+                            <Typography component="span" variant="body2" color="textSecondary">
+                              {match.facility} | {match.status} | Ronda: {match.round || 'N/A'}
+                            </Typography>
+                            {(match.home_score !== null || match.away_score !== null) && (
+                              <>
+                                <br />
+                                <Typography component="span" variant="body2" color="primary">
+                                  Resultado: {match.home_score ?? '?'} - {match.away_score ?? '?'}
+                                </Typography>
+                              </>
+                            )}
+                          </>
+                        }
+                      />
+                    </ListItem>
                     <Divider component="li" />
                   </React.Fragment>
                 );

@@ -3,6 +3,7 @@ import { Box, Typography, CircularProgress, Alert, List, ListItem, ListItemText,
 import axios from 'axios';
 
 const API_BASE = 'https://lfcha2025.onrender.com';
+//const API_BASE = 'http://localhost:8000';
 
 export default function CardsByTeam() {
   const [data, setData] = useState([]);

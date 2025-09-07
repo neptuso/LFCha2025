@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session, aliased
 from database import get_db
-from models import Match, Team
+from models import Match, Team, Competition
 from datetime import datetime
 
 router = APIRouter(prefix="/api")
@@ -12,10 +12,22 @@ def get_matches(
     team_id: int = Query(None, description="Filtrar por equipo (team_id_comet)"),
     db: Session = Depends(get_db)
 ):
+    # ✅ Buscar competición PRIMERA DIVISIÓN 2025
+    competition = db.query(Competition).filter(
+        Competition.name == "PRIMERA DIVISIÓN",
+        Competition.season == "2025"
+    ).first()
+    
+    if not competition:
+        raise HTTPException(status_code=404, detail="Competición PRIMERA DIVISIÓN 2025 no encontrada")
+
+    # Crear alias para los equipos
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
 
+    # ✅ Filtrar solo partidos de PRIMERA DIVISIÓN 2025
     query = db.query(Match).join(HomeTeam, Match.home_team_id == HomeTeam.id).join(AwayTeam, Match.away_team_id == AwayTeam.id)
+    query = query.filter(Match.competition_id == competition.id)
 
     if date:
         try:
@@ -28,7 +40,7 @@ def get_matches(
     if team_id:
         team_exists = db.query(Team).filter(Team.team_id_comet == team_id).first()
         if not team_exists:
-            return {"error": f"Equipo con team_id_comet={team_id} no encontrado en la base de datos"}
+            return {"error": f"Equipo con team_id_comet={team_id} no encontrado"}
         query = query.filter((HomeTeam.team_id_comet == team_id) | (AwayTeam.team_id_comet == team_id))
 
     matches = query.order_by(Match.date).all()

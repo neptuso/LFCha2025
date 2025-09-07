@@ -23,7 +23,7 @@ export default function StatsDashboard() {
             <Paper 
               component={Link} 
               to={stat.path} 
-              component={RouterLink}
+              components={RouterLink}
               sx={{ 
                 p: 3, 
                 textAlign: 'center', 

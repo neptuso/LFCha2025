@@ -30,9 +30,10 @@ export default function Navbar() {
     { text: 'Goleadores por Equipo', path: '/stats/top-scorers-by-team' },
     { text: 'Tarjetas por Equipo', path: '/stats/cards-by-team' },
     { text: 'Rachas', path: '/stats/streaks' },
-    { text: 'Almanac', path: '/almanac'}
+    { text: 'Almanac', path: '/almanac'}, 
+    { text: 'Admin', path: '/admin/matches'}   
   ];
-
+// <Button component={Link} to="/admin/matches" sx={{ color: 'white' }}>Admin</Button>
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ width: 250 }}>
       <Box sx={{ height: 64 }} />

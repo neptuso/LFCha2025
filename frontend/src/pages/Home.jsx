@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import StandingsTable from '../components/StandingsTable';
+//import StandingsTable from '../components/StandingsTable';
+import StandingsTableWithSelector from '../components/StandingsTableWithSelector';
 import { fetchStandings } from '../services/api';
 import { Box } from '@mui/material';
 
@@ -30,7 +31,7 @@ export default function Home() {
     <div style={{ padding: 20 }}>
       <h2>Tabla de Posiciones - Primera División 2025</h2>
       <Box sx={{ width: '100%', overflowX: 'auto' }}>
-        <StandingsTable standings={standings} />
+        <StandingsTableWithSelector standings={standings} />
       </Box>
     </div>
   );

@@ -9,7 +9,7 @@ load_dotenv()
 
 # Definir la URL de la base de datos
 DATABASE_URL = "sqlite:///ligachajari.db"
-# DATABASE_URL = "sqlite:///ligachajari.db"
+
 
 # Crear el motor de base de datos
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

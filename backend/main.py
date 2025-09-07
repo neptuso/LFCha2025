@@ -1,28 +1,28 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI,Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models
 from models import Base
-from services.sync_service import sync_matches, sync_events
-from api import standings, matches, match_detail, top_scorers, stats
+from services.sync_service import run_final_sync
+from api import standings, matches, match_detail, top_scorers, stats, admin, competitions
 
-app = FastAPI(title="Liga Chajarí by Nep - API")
+app =FastAPI(title="Liga Chajarí by Nep - API")
 
-# Configurar CORS (sin espacios)
+#Configurar CORS (sin espacios)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://lfcha2025-f2.onrender.com"  # ✅ Sin espacios
+        "https://lfcha2025-f2.onrender.com"  # ✅Sin espacios
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Crear tablas
+#Crear tablas
 Base.metadata.create_all(bind=engine)
 
 def get_db():
@@ -34,26 +34,25 @@ def get_db():
 
 @app.post("/api/sync-data")
 def sync_data(db: Session = Depends(get_db)):
-    print("🚀 Iniciando sincronización de partidos...")
-    sync_matches()
-    print("🚀 Iniciando sincronización de eventos...")
-    sync_events()
+    print("🚀 Ejecutando Sincronización Final...")
+    run_final_sync()
     return {
         "status": "success",
-        "message": "Sincronización completa"
+        "message": "Sincronización Final iniciada."
     }
 
 @app.get("/healthz")
 def health_check():
-    return {"status": "ok"}
+    return{"status": "ok"}
 
 @app.get("/")
 def home():
-    return {"message": "Backend activo"}
+    return{"message": "Backend activo"}
 
-# Incluir routers (sin doble /api)
+#Incluir routers (sin doble /api)
 app.include_router(standings.router)
 app.include_router(matches.router)
 app.include_router(match_detail.router)
 app.include_router(top_scorers.router)
-app.include_router(stats.router)  # ✅ Correcto
+app.include_router(stats.router)  # ✅Añadido: necesario para que funcionen las estadísticas
+app.include_router(competitions.router)

@@ -74,3 +74,10 @@ class Event(Base):
     match = relationship("Match")
     player = relationship("Player")
     team = relationship("Team")
+
+# Clase faltante añadida para el registro de sincronizaciones
+class SyncLog(Base):
+    __tablename__ = 'sync_log'
+    id = Column(Integer, primary_key=True)
+    sync_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    records_processed = Column(Integer, nullable=False, default=0)

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-
-const API_BASE = 'https://lfcha2025.onrender.com';
+//const API_BASE = 'http://127.0.0.1:8000';  // ✅ Local
+const API_BASE = 'https://lfcha2025.onrender.com';  // ✅ Producción
 
 export const fetchStandings = async (competitionId) => {
   const response = await axios.get(`${API_BASE}/api/standings/${competitionId}`);
