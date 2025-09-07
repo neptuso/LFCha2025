@@ -16,8 +16,8 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 
-///const API_BASE = 'https://lfcha2025.onrender.com';
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://lfcha2025.onrender.com';
+//const API_BASE = 'http://localhost:8000';
 
 export default function TopScorers() {
   const [scorers, setScorers] = useState([]);
