@@ -1,15 +1,16 @@
 # backend/services/top_scorers_service.py
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from models import Event, Player, Team, Match
 
 def get_top_scorers(db: Session, competition_id: int, limit: int = 10):
     """
     Obtiene el top de goleadores de una competición
     """
-    # Filtrar eventos de tipo "Gol" en partidos de la competición
+    # Filtrar eventos de tipo "Goal" (case-insensitive) en partidos de la competición
     query = db.query(Event).join(Event.match).join(Event.player).join(Event.team).filter(
-        Event.event_type == "Gol",
+        func.lower(Event.event_type) == "goal",
         Match.competition_id == competition_id
     )
 

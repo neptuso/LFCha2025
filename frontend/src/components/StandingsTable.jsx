@@ -25,8 +25,8 @@ const getShieldUrl = (teamName) => {
 
 export default function StandingsTable({ standings }) {
   return (
-    <TableContainer component={Paper}>
-      <Table size="small" sx={{ minWidth: 600 }}>
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+      <Table size="small">
         <TableHead>
           <TableRow>
             <TableCell>#</TableCell>

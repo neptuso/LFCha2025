@@ -24,14 +24,16 @@ export default function Navbar() {
 
   const menuItems = [
     { text: 'Tabla', path: '/' },
-    { text: 'Calendario', path: '/calendar' },
+//    { text: 'Calendario', path: '/calendar' },
     { text: 'Goleadores', path: '/top-scorers' },
-    { text: 'Goles por Minuto', path: '/stats/goals-by-minute' },
-    { text: 'Goleadores por Equipo', path: '/stats/top-scorers-by-team' },
+//    { text: 'Goles por Minuto', path: '/stats/goals-by-minute' },
+//    { text: 'Goleadores por Equipo', path: '/stats/top-scorers-by-team' },
     { text: 'Tarjetas por Equipo', path: '/stats/cards-by-team' },
-    { text: 'Rachas', path: '/stats/streaks' },
+//    { text: 'Rachas', path: '/stats/streaks' },
     { text: 'Almanac', path: '/almanac'}, 
-    { text: 'Admin', path: '/admin/matches'}   
+    { text: 'Eventos', path: '/events' },
+    { text: 'Calendario', path: '/calendar' },
+//    { text: 'Admin', path: '/admin/matches'}   
   ];
 // <Button component={Link} to="/admin/matches" sx={{ color: 'white' }}>Admin</Button>
   const drawer = (

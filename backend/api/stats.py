@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 from database import get_db
 from models import Event, Match, Team, Player
+import schemas
+from typing import List
 
 router = APIRouter(prefix="/api")
 
 @router.get("/goals-by-minute")
 def get_goals_by_minute(competition_id: int, db: Session = Depends(get_db)):
     events = db.query(Event).join(Match).filter(
-        Event.event_type == "Gol",
+        func.lower(Event.event_type) == "goal",
         Match.competition_id == competition_id
     )
     by_minute = [0] * 90
@@ -17,29 +20,28 @@ def get_goals_by_minute(competition_id: int, db: Session = Depends(get_db)):
             by_minute[e.minute] += 1
     return {"minutes": by_minute}
 
-@router.get("/cards-by-team")
+@router.get("/cards-by-team", response_model=List[schemas.TeamCardStats])
 def get_cards_by_team(competition_id: int, db: Session = Depends(get_db)):
-    events = db.query(Event).join(Match).filter(
-        Match.competition_id == competition_id,
-        Event.event_type.in_(["Tarjeta amarilla", "Tarjeta roja"])
-    )
-    result = {}
-    for e in events:
-        team = db.query(Team).get(e.team_id)
-        if team:
-            name = team.name
-            if name not in result: 
-                result[name] = {"amarillas": 0, "rojas": 0}
-            if e.event_type == "Tarjeta amarilla":
-                result[name]["amarillas"] += 1
-            elif e.event_type == "Tarjeta roja":
-                result[name]["rojas"] += 1
-    return sorted(result.items(), key=lambda x: -(x[1]["amarillas"] + x[1]["rojas"]))
+    """
+    Calcula las estadísticas de tarjetas amarillas y rojas por equipo de una manera eficiente.
+    """
+    card_stats = db.query(
+        Team.name.label("team_name"),
+        func.count(case((func.lower(Event.event_type) == 'yellow card', 1))).label('yellow_cards'),
+        func.count(case((func.lower(Event.event_type) == 'red card', 1))).label('red_cards')
+    ).join(Event, Team.id == Event.team_id)\
+     .join(Match, Event.match_id == Match.id)\
+     .filter(Match.competition_id == competition_id)\
+     .filter(func.lower(Event.event_type).in_(['yellow card', 'red card']))\
+     .group_by(Team.name)\
+     .order_by(func.count(case((func.lower(Event.event_type) == 'red card', 1))).desc(), func.count(case((func.lower(Event.event_type) == 'yellow card', 1))).desc())\
+     .all()
+    return card_stats
 
 @router.get("/top-scorers-by-team")
 def get_top_scorers_by_team(competition_id: int, db: Session = Depends(get_db)):
     events = db.query(Event).join(Match).filter(
-        Event.event_type == "Gol",
+        func.lower(Event.event_type) == "goal",
         Match.competition_id == competition_id
     )
     by_team = {}

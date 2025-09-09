@@ -5,7 +5,7 @@ from database import SessionLocal, engine
 import models
 from models import Base
 from services.sync_service import run_final_sync
-from api import standings, matches, match_detail, top_scorers, stats, admin, competitions
+from api import standings, matches, match_detail, top_scorers, stats, admin, competitions, matches_with_stats
 
 app =FastAPI(title="Liga Chajarí by Nep - API")
 
@@ -56,3 +56,4 @@ app.include_router(match_detail.router)
 app.include_router(top_scorers.router)
 app.include_router(stats.router)  # ✅Añadido: necesario para que funcionen las estadísticas
 app.include_router(competitions.router)
+app.include_router(matches_with_stats.router)

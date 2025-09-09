@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session, aliased
 from database import get_db
-from models import Match, Team, Competition
+from models import Match, Team, Competition, Event
 from datetime import datetime
 
 router = APIRouter(prefix="/api")
@@ -53,6 +53,16 @@ def get_matches(
         home_team = db.query(Team).filter(Team.id == match.home_team_id).first()
         away_team = db.query(Team).filter(Team.id == match.away_team_id).first()
 
+        # Contar eventos para cada equipo
+        home_events_count = db.query(Event).filter(
+            Event.match_id == match.id,
+            Event.team_id == match.home_team_id
+        ).count()
+        away_events_count = db.query(Event).filter(
+            Event.match_id == match.id,
+            Event.team_id == match.away_team_id
+        ).count()
+
         result.append({
             "id": match.match_id_comet,
             "home_team": {
@@ -70,7 +80,9 @@ def get_matches(
             "round": match.round,
             "home_score": match.home_score,
             "away_score": match.away_score,
-            "facility": match.facility
+            "facility": match.facility,
+            "home_team_events": home_events_count,
+            "away_team_events": away_events_count
         })
 
     return result

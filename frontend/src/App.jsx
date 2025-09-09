@@ -15,6 +15,7 @@ import TopScorersByTeam from './pages/TopScorersByTeam';
 import CardsByTeam from './pages/CardsByTeam';
 import StreaksView from './pages/StreaksView';
 import AdminMatches from './pages/AdminMatches';
+import EventsView from './pages/EventsView';
 
 // ✅ Definir el tema dentro de App(), después de darkMode
 function App() {
@@ -62,6 +63,7 @@ function App() {
           <Route path="/stats/cards-by-team" element={<CardsByTeam />} />
           <Route path="/stats/streaks" element={<StreaksView />} />
           <Route path="/admin/matches" element={<AdminMatches />} />
+          <Route path="/events" element={<EventsView />} />
         </Routes>
       </Router>
     </ThemeProvider>
