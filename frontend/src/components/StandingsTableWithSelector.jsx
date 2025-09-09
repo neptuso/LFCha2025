@@ -13,8 +13,8 @@ import {
 import axios from 'axios';
 import StandingsTable from './StandingsTable'; // Asegúrate de que la ruta sea correcta
 
-const API_BASE = 'http://127.0.0.1:8000'; // Ajusta si usas producción
-//const API_BASE = 'https://lfcha2025.onrender.com'; // Ajusta si usas producción
+//const API_BASE = 'http://127.0.0.1:8000'; // Ajusta si usas producción
+const API_BASE = 'https://lfcha2025.onrender.com'; // Ajusta si usas producción
 
 const StandingsTableWithSelector = () => {
   const [competitions, setCompetitions] = useState([]);
