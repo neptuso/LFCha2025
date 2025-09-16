@@ -26,11 +26,11 @@ const getShieldUrl = (teamName) => {
 export default function StandingsTable({ standings }) {
   return (
     <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
-            <TableCell>#</TableCell>
-            <TableCell>Equipo</TableCell>
+            <TableCell sx={{ position: 'sticky', left: 0, zIndex: 2, backgroundColor: 'background.paper', width: 40 }}>#</TableCell>
+            <TableCell sx={{ position: 'sticky', left: 40, zIndex: 2, backgroundColor: 'background.paper', minWidth: 250 }}>Equipo</TableCell>
             <TableCell align="right">PJ</TableCell>
             <TableCell align="right">G</TableCell>
             <TableCell align="right">E</TableCell>
@@ -44,8 +44,8 @@ export default function StandingsTable({ standings }) {
         <TableBody>
           {standings.map((entry) => (
             <TableRow key={entry.team.id}>
-              <TableCell>{entry.position}</TableCell>
-              <TableCell>
+              <TableCell sx={{ position: 'sticky', left: 0, zIndex: 1, backgroundColor: 'background.paper', width: 40 }}>{entry.position}</TableCell>
+              <TableCell sx={{ position: 'sticky', left: 40, zIndex: 1, backgroundColor: 'background.paper' }}>
                 <img
                   src={getShieldUrl(entry.team.name)}
                   alt={entry.team.name}

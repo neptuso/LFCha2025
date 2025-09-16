@@ -4,26 +4,30 @@ import { Link as RouterLink } from 'react-router-dom';
 
 export default function StatsDashboard() {
   const stats = [
-    { title: "Goles por Minuto", description: "Distribución de goles durante el partido", path: "/stats/goals-by-minute", color: "primary" },
-    { title: "Goleadores por Equipo", description: "Máximos anotadores de cada club", path: "/stats/top-scorers-by-team", color: "success" },
+    { title: "Tabla de Posiciones", description: "Clasificación actual del torneo", path: "/", color: "primary" },
+    { title: "Goleadores", description: "Máximos anotadores del torneo", path: "/top-scorers", color: "success" },
+    { title: "Almanaque", description: "Resultados y partidos por fecha", path: "/almanac", color: "info" },
+    { title: "Calendario", description: "Próximos partidos del torneo", path: "/calendar", color: "secondary" },
     { title: "Tarjetas por Equipo", description: "Total de amarillas y rojas", path: "/stats/cards-by-team", color: "warning" },
-    { title: "Rachas de Partidos", description: "Equipos en racha ganadora o invictos", path: "/stats/streaks", color: "error" }
+    { title: "Rachas de Partidos", description: "Equipos en racha ganadora o invictos", path: "/stats/streaks", color: "error" },
+    { title: "Goles por Minuto", description: "Distribución de goles en el partido", path: "/stats/goals-by-minute", color: "primary" },
+    { title: "Goleadores por Equipo", description: "Máximos anotadores de cada club", path: "/stats/top-scorers-by-team", color: "success" },
+    { title: "Sanciones por Jugador", description: "Ranking de tarjetas por jugador", path: "/stats/player-sanctions", color: "secondary" }
   ];
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h4" gutterBottom>📊 Estadísticas Avanzadas</Typography>
+      <Typography variant="h4" gutterBottom>📊 Dashboard de Estadísticas</Typography>
       <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
-        Profundiza el análisis del torneo con estadísticas detalladas
+        Selecciona una categoría para explorar los datos del torneo
       </Typography>
 
       <Grid container spacing={3}>
         {stats.map((stat) => (
           <Grid item xs={12} sm={6} md={3} key={stat.title}>
             <Paper 
-              component={Link} 
+              component={RouterLink} 
               to={stat.path} 
-              components={RouterLink}
               sx={{ 
                 p: 3, 
                 textAlign: 'center', 

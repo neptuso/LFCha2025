@@ -33,8 +33,7 @@ export default function AlmanacView() {
         const response = await axios.get(`${API_BASE}/api/matches`);
         const grouped = response.data.reduce((acc, match) => {
           if (!match.date) return acc;
-          const date = new Date(match.date);
-          const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+          const dateStr = match.date.split('T')[0]; // YYYY-MM-DD, directamente del string UTC
           if (!acc[dateStr]) acc[dateStr] = [];
           acc[dateStr].push(match);
           return acc;
@@ -56,12 +55,15 @@ export default function AlmanacView() {
     setCurrentDate(newDate);
   };
 
-  const formatDate = (date) => {
+  const formatDate = (dateStr) => {
+    // Añadimos T12:00:00 para evitar que el cambio de zona horaria nos mueva al día anterior
+    const date = new Date(`${dateStr}T12:00:00Z`);
     return date.toLocaleDateString('es-ES', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC' // Forzar la interpretación como UTC
     });
   };
 
@@ -82,7 +84,7 @@ export default function AlmanacView() {
     
     // Dias del mes actual
     for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = new Date(year, month, i).toISOString().split('T')[0];
+      const dateStr = new Date(Date.UTC(year, month, i)).toISOString().split('T')[0];
       days.push({
         day: i,
         dateStr: dateStr,
@@ -127,7 +129,7 @@ export default function AlmanacView() {
             Volver al almanaque
           </Button>
           <Typography variant="h5" gutterBottom>
-            Partidos del {formatDate(new Date(selectedDate))}
+            Partidos del {formatDate(selectedDate)}
           </Typography>
           
           {matchesByDate[selectedDate] && matchesByDate[selectedDate].length > 0 ? (
@@ -146,10 +148,18 @@ export default function AlmanacView() {
                         {match.round ? `Ronda: ${match.round}` : ''}
                       </Typography>
                       {(match.home_score !== null || match.away_score !== null) && (
-                        <Typography variant="h6" color="primary">
+                        <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
                           {match.home_score ?? '?'} - {match.away_score ?? '?'}
                         </Typography>
                       )}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1, borderTop: '1px solid #eee', pt: 1 }}>
+                        <Typography variant="body2" color="textSecondary">
+                          Eventos: {match.home_team_events}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Eventos: {match.away_team_events}
+                        </Typography>
+                      </Box>
                     </Link>
                   </Paper>
                 </Grid>

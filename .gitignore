@@ -1,3 +1,9 @@
+# Archivos de base de datos
+
+
+# Directorios de residuos
+residuos/
+
 # Backend
 venv/
 __pycache__/
@@ -21,3 +27,6 @@ backend/services/sync_service_ba.py
 # Archivos de entorno con claves
 frontend/.env.development
 frontend/.env.production
+
+# PROJECT DE EJEMPLO
+proyecto_anterior/

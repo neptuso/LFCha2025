@@ -6,10 +6,13 @@ from models import Match, Team, Competition, Player, Event
 import os
 
 # --- CONFIGURACIÓN ---
-API_KEY = os.getenv("COMET_API_KEY_3")
+API_KEY = os.getenv("COMET_API_KEY_3") # Para Partidos
+EVENTS_API_KEY = os.getenv("COMET_API_KEY_1") # Para Eventos
+ZONES_API_KEY = os.getenv("COMET_API_KEY_2") # Para Zonas
 BASE_URL = "https://latam.analyticom.de/data-backend/api/public/areports/run"
 MATCHES_TEMPLATE_ID = 3318704
 EVENTS_TEMPLATE_ID = 3315314
+ZONES_TEMPLATE_ID = 3315540
 
 # --- CACHÉ EN MEMORIA ---
 competitions_cache = {}
@@ -60,7 +63,7 @@ def _get_or_create_player(db: Session, row: dict, team_id: int):
     players_cache[person_id] = new_player
     return new_player
 
-def run_final_sync():
+def run_final_sync(zones_report_id: int = None):
     global competitions_cache, teams_cache, players_cache, matches_cache
     db = SessionLocal()
     if not API_KEY: 
@@ -120,14 +123,82 @@ def run_final_sync():
             page += 1
         print(f"   -> Se añadieron {total_new_matches} partidos nuevos a la sesión.")
 
+        # --- PASO 1.5: Sincronizando Zonas (si existen) ---
+        print("\n--- PASO 1.5: Sincronizando Zonas (si existen) ---")
+        if not ZONES_API_KEY:
+            print("⚠️  Advertencia: COMET_API_KEY_2 no está configurada. Saltando sincronización de zonas.")
+        else:
+            # Hacemos commit de los partidos nuevos para poder consultarlos y actualizarlos.
+            if total_new_matches > 0:
+                print("   -> Guardando partidos nuevos antes de asignar zonas...")
+                db.commit()
+
+            # Mapeamos TODOS los partidos de la temporada para poder actualizarlos
+            match_map = {
+                m.match_id_comet: m.id
+                for m in db.query(Match.match_id_comet, Match.id)
+                .join(Competition)
+                .filter(Competition.season == "2025")
+                .all()
+            }
+            
+            if not match_map:
+                print("   -> No se encontraron partidos de la temporada 2025 para actualizar zonas.")
+            else:
+                updated_zones_count = 0
+                page = 0
+                template_id_to_use = zones_report_id if zones_report_id is not None else ZONES_TEMPLATE_ID
+                print(f"   -> Usando Report Template ID para Zonas: {template_id_to_use}")
+                while True:
+                    url = f"{BASE_URL}/{template_id_to_use}/{page}/999/?API_KEY={ZONES_API_KEY}"
+                    try:
+                        response = requests.get(url, timeout=30)
+                        response.raise_for_status()
+                        data = response.json()
+                        results = data.get("results", [])
+                        if not results:
+                            break
+
+                        for row in results:
+                            match_id_comet = row.get("matchId")
+                            if match_id_comet in match_map:
+                                raw_zone_name = row.get("name", "")
+                                parsed_zone = None
+                                
+                                # Nueva lógica de extracción más robusta
+                                if " - " in raw_zone_name:
+                                    # Divide el string por " - " y toma el último elemento.
+                                    # ej: "PRIMERA DIVISIÓN 2025 - ZONA \"D\"" -> "ZONA \"D\""
+                                    # ej: "PRIMERA DIVISIÓN 2025 - INTERZONAL" -> "INTERZONAL"
+                                    parsed_zone = raw_zone_name.split(" - ")[-1].strip()
+
+                                if parsed_zone:
+                                    match_db_id = match_map[match_id_comet]
+                                    match_to_update = db.query(Match).filter(Match.id == match_db_id).first()
+                                    # Actualizamos solo si el valor es diferente
+                                    if match_to_update and match_to_update.zone != parsed_zone:
+                                        match_to_update.zone = parsed_zone
+                                        db.add(match_to_update)
+                                        updated_zones_count += 1
+                                        changes_made = True
+                        
+                        print(f"   -> Página {page} de zonas procesada.")
+                        if page >= data.get("lastPage", 0):
+                            break
+                        page += 1
+                    except requests.exceptions.RequestException as e:
+                        print(f"   -> ❌ Error al contactar la API de Zonas: {e}. Saltando el resto de la sincronización de zonas.")
+                        break
+                print(f"   -> Se actualizaron las zonas de {updated_zones_count} partidos.")
+
         # --- PASO 2: SINCRONIZAR EVENTOS ---
         print("\n--- PASO 2: Sincronizando Eventos de 2025 ---")
-        EVENTS_API_KEY = os.getenv("COMET_API_KEY_1")
         if not EVENTS_API_KEY:
             print("⚠️  Advertencia: COMET_API_KEY_1 no está configurada. Saltando sincronización de eventos.")
         else:
             matches_cache = {m.match_id_comet: m.id for m in db.query(Match.match_id_comet, Match.id).all()}
             teams_cache.update({t.team_id_comet: t.id for t in db.query(Team.team_id_comet, Team.id).all()})
+            matches_with_new_events = set()
             page = 0
             while True:
                 url = f"{BASE_URL}/{EVENTS_TEMPLATE_ID}/{page}/999/?API_KEY={EVENTS_API_KEY}"
@@ -186,11 +257,52 @@ def run_final_sync():
                         db.add(new_event)
                         total_new_events += 1
                         changes_made = True
+                        matches_with_new_events.add(match_db_id)
 
                 print(f"   -> Página {page} de eventos procesada.")
                 if page >= data.get("lastPage", 0): break
                 page += 1
             print(f"   -> Se añadieron {total_new_events} eventos nuevos a la sesión.")
+
+        # --- PASO 2.5: Actualizando Marcadores y Estados Post-Eventos ---
+        print("\n--- PASO 2.5: Actualizando Marcadores y Estados ---")
+        if not matches_with_new_events:
+            print("   -> No hay partidos con eventos nuevos para actualizar.")
+        else:
+            print(f"   -> Recalculando marcadores para {len(matches_with_new_events)} partidos con eventos nuevos...")
+            updated_scores_count = 0
+            for match_id in matches_with_new_events:
+                match = db.query(Match).filter_by(id=match_id).first()
+                if not match:
+                    continue
+
+                # Recalcular goles desde los eventos en la sesión actual
+                home_goals = db.query(Event).filter(
+                    Event.match_id == match.id,
+                    Event.event_type.in_(['Goal', 'Own goal', 'Penalty']),
+                    Event.team_id == match.home_team_id
+                ).count()
+
+                away_goals = db.query(Event).filter(
+                    Event.match_id == match.id,
+                    Event.event_type.in_(['Goal', 'Own goal', 'Penalty']),
+                    Event.team_id == match.away_team_id
+                ).count()
+                
+                score_is_inconsistent = (match.home_score != home_goals) or (match.away_score != away_goals)
+                status_is_inconsistent = (home_goals + away_goals > 0) and (match.status in ['SCHEDULED', 'ENTERED'])
+
+                if score_is_inconsistent or status_is_inconsistent:
+                    match.home_score = home_goals
+                    match.away_score = away_goals
+                    if status_is_inconsistent:
+                        match.status = 'PLAYED'
+                    
+                    db.add(match)
+                    updated_scores_count += 1
+                    changes_made = True
+            
+            print(f"   -> Se actualizaron los marcadores/estados de {updated_scores_count} partidos.")
 
         # --- PASO 3: GUARDAR TODO ---
         if changes_made:

@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Event, Player, Team, Match
 
-def get_top_scorers(db: Session, competition_id: int, limit: int = 10):
+def get_top_scorers(db: Session, competition_id: int, limit: int = 10, zone: str = None):
     """
-    Obtiene el top de goleadores de una competición
+    Obtiene el top de goleadores de una competición.
+    Si se especifica una zona, filtra los resultados para esa zona.
     """
     # Filtrar eventos de tipo "Goal" (case-insensitive) en partidos de la competición
     query = db.query(Event).join(Event.match).join(Event.player).join(Event.team).filter(
@@ -14,12 +15,17 @@ def get_top_scorers(db: Session, competition_id: int, limit: int = 10):
         Match.competition_id == competition_id
     )
 
+    # Añadir filtro de zona si se proporciona
+    if zone:
+        query = query.filter(Match.zone == zone)
+
     scorer_stats = {}
     for event in query:
         player = event.player
         team = event.team
         if player.id not in scorer_stats:
             scorer_stats[player.id] = {
+                "player_id": player.id,
                 "player_name": player.name,
                 "team_name": team.name,
                 "goals": 0
