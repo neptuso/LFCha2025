@@ -23,7 +23,10 @@ export default function Navbar() {
   };
 
   const menuItems = [
+    { text: 'Torneo', path: '/tournament' },
     { text: 'Tabla', path: '/' },
+    { text: 'Posiciones por Zona', path: '/zonal-standings' },
+//    { text: 'Estadísticas por Zona', path: '/zonal-stats' },
 //    { text: 'Calendario', path: '/calendar' },
     { text: 'Goleadores', path: '/top-scorers' },
 //    { text: 'Goles por Minuto', path: '/stats/goals-by-minute' },
@@ -34,6 +37,8 @@ export default function Navbar() {
     { text: 'Eventos', path: '/events' },
     { text: 'Calendario', path: '/calendar' },
 //    { text: 'Admin', path: '/admin/matches'}   
+    { text: 'Resumen Stats', path: '/stats' },
+    { text: 'Dashboard Dinámico', path: '/dashboard' }
   ];
 // <Button component={Link} to="/admin/matches" sx={{ color: 'white' }}>Admin</Button>
   const drawer = (

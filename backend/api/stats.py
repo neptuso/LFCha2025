@@ -1,12 +1,29 @@
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 from database import get_db
-from models import Event, Match, Team, Player
+from models import Event, Match, Team, Player, TeamDisplay
 import schemas
 from typing import List
+# Importar los nuevos servicios
+from services.stats_service import get_clean_sheets_ranking, get_player_sanctions_ranking
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api/stats")
+
+@router.get("/clean-sheets/{competition_id}")
+def get_clean_sheets(competition_id: int, db: Session = Depends(get_db), zone: str = Query(None)):
+    """
+    Obtiene el ranking de vallas invictas para una competición y zona opcional.
+    """
+    return get_clean_sheets_ranking(db, competition_id=competition_id, zone=zone)
+
+@router.get("/player-sanctions/{competition_id}")
+def get_player_sanctions(competition_id: int, db: Session = Depends(get_db), zone: str = Query(None)):
+    """
+    Obtiene el ranking de tarjetas por jugador para una competición y zona opcional.
+    """
+    return get_player_sanctions_ranking(db, competition_id=competition_id, zone=zone)
 
 @router.get("/goals-by-minute")
 def get_goals_by_minute(competition_id: int, db: Session = Depends(get_db)):
@@ -23,19 +40,25 @@ def get_goals_by_minute(competition_id: int, db: Session = Depends(get_db)):
 @router.get("/cards-by-team", response_model=List[schemas.TeamCardStats])
 def get_cards_by_team(competition_id: int, db: Session = Depends(get_db)):
     """
-    Calcula las estadísticas de tarjetas amarillas y rojas por equipo de una manera eficiente.
+    Calcula las estadísticas de tarjetas amarillas y rojas por equipo, incluyendo datos de visualización.
     """
-    card_stats = db.query(
+    card_stats = (db.query(
         Team.name.label("team_name"),
+        TeamDisplay.display_name,
+        TeamDisplay.abbreviation,
+        TeamDisplay.shield_url,
         func.count(case((func.lower(Event.event_type) == 'yellow card', 1))).label('yellow_cards'),
         func.count(case((func.lower(Event.event_type) == 'red card', 1))).label('red_cards')
-    ).join(Event, Team.id == Event.team_id)\
-     .join(Match, Event.match_id == Match.id)\
-     .filter(Match.competition_id == competition_id)\
-     .filter(func.lower(Event.event_type).in_(['yellow card', 'red card']))\
-     .group_by(Team.name)\
-     .order_by(func.count(case((func.lower(Event.event_type) == 'red card', 1))).desc(), func.count(case((func.lower(Event.event_type) == 'yellow card', 1))).desc())\
-     .all()
+    )
+    .join(Event, Team.id == Event.team_id)
+    .join(Match, Event.match_id == Match.id)
+    .join(TeamDisplay, Team.id == TeamDisplay.team_id)
+    .filter(Match.competition_id == competition_id)
+    .filter(func.lower(Event.event_type).in_(['yellow card', 'red card']))
+    .group_by(Team.name, TeamDisplay.display_name, TeamDisplay.abbreviation, TeamDisplay.shield_url)
+    .order_by(func.count(case((func.lower(Event.event_type) == 'red card', 1))).desc(), func.count(case((func.lower(Event.event_type) == 'yellow card', 1))).desc())
+    .all())
+    
     return card_stats
 
 @router.get("/top-scorers-by-team")
