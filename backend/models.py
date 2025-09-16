@@ -19,6 +19,17 @@ class Team(Base):
     parent_club_id = Column(Integer)
     association = Column(String)
 
+    # Relación uno a uno con TeamDisplay
+    display = relationship("TeamDisplay", backref="team", uselist=False, cascade="all, delete-orphan")
+
+class TeamDisplay(Base):
+    __tablename__ = "team_display"
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), unique=True, nullable=False)
+    display_name = Column(String, nullable=False)
+    abbreviation = Column(String(3), nullable=False)
+    shield_url = Column(String)
+
 class Player(Base):
     __tablename__ = "players"
     id = Column(Integer, primary_key=True)
@@ -48,6 +59,7 @@ class Match(Base):
     facility = Column(String)
     referee_id = Column(Integer, ForeignKey("referees.id"))
     round = Column(String)
+    zone = Column(String, nullable=True, index=True)
     home_score = Column(Integer, nullable=True)
     away_score = Column(Integer, nullable=True)
 
