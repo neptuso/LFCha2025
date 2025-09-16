@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
@@ -60,5 +61,38 @@ class TopScorer(BaseModel):
 
 class TeamCardStats(BaseModel):
     team_name: str
+    display_name: str
+    abbreviation: str
+    shield_url: str
     yellow_cards: int
     red_cards: int
+
+    class Config:
+        orm_mode = True
+
+class PlayerGoalDetail(BaseModel):
+    match_id: int
+    match_date: Optional[datetime]
+    opponent_name: str
+    minute: int
+    event_type: str
+    is_home_game: bool
+    team_shield_url: Optional[str]
+    opponent_shield_url: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+class PlayerSanctionDetail(BaseModel):
+    match_id: int
+    match_date: Optional[datetime]
+    opponent_name: str
+    minute: Optional[int]
+    event_type: str
+    sub_type: Optional[str]
+    is_home_game: bool
+    team_shield_url: Optional[str]
+    opponent_shield_url: Optional[str]
+
+    class Config:
+        orm_mode = True
