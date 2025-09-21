@@ -1,18 +1,17 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session, aliased
+from sqlalchemy import asc
 from database import get_db
 from models import Match, Team, Competition, Event
 from datetime import datetime
 
 router = APIRouter(prefix="/api")
 
-@router.get("/matches")
-def get_matches(
-    date: str = Query(None, description="Filtrar por fecha (YYYY-MM-DD)"),
-    team_id: int = Query(None, description="Filtrar por equipo (team_id_comet)"),
-    db: Session = Depends(get_db)
-):
-    # ✅ Buscar competición PRIMERA DIVISIÓN 2025
+@router.get("/rounds")
+def get_rounds(db: Session = Depends(get_db)):
+    """
+    Obtiene una lista ordenada de todas las rondas (fechas) para la competición principal.
+    """
     competition = db.query(Competition).filter(
         Competition.name == "PRIMERA DIVISIÓN",
         Competition.season == "2025"
@@ -21,11 +20,35 @@ def get_matches(
     if not competition:
         raise HTTPException(status_code=404, detail="Competición PRIMERA DIVISIÓN 2025 no encontrada")
 
-    # Crear alias para los equipos
+    rounds_query = db.query(Match.round).filter(Match.competition_id == competition.id).distinct().all()
+    
+    # Extraer el string de la tupla y convertir a entero para ordenar
+    rounds_tuples = [r[0] for r in rounds_query if r[0] is not None]
+    
+    # Ordenar numéricamente basado en el número de la ronda
+    # Esto asegura que "Fecha 10" venga después de "Fecha 9"
+    rounds_sorted = sorted(rounds_tuples, key=lambda x: int("".join(filter(str.isdigit, x)) or 0))
+
+    return rounds_sorted
+
+@router.get("/matches")
+def get_matches(
+    date: str = Query(None, description="Filtrar por fecha (YYYY-MM-DD)"),
+    team_id: int = Query(None, description="Filtrar por equipo (team_id_comet)"),
+    round: str = Query(None, description="Filtrar por número de fecha"),
+    db: Session = Depends(get_db)
+):
+    competition = db.query(Competition).filter(
+        Competition.name == "PRIMERA DIVISIÓN",
+        Competition.season == "2025"
+    ).first()
+    
+    if not competition:
+        raise HTTPException(status_code=404, detail="Competición PRIMERA DIVISIÓN 2025 no encontrada")
+
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
 
-    # ✅ Filtrar solo partidos de PRIMERA DIVISIÓN 2025
     query = db.query(Match).join(HomeTeam, Match.home_team_id == HomeTeam.id).join(AwayTeam, Match.away_team_id == AwayTeam.id)
     query = query.filter(Match.competition_id == competition.id)
 
@@ -35,25 +58,30 @@ def get_matches(
             next_day = target_date.replace(hour=23, minute=59, second=59)
             query = query.filter(Match.date >= target_date, Match.date <= next_day)
         except ValueError:
-            return {"error": "Formato de fecha inválido. Usa YYYY-MM-DD"}
+            raise HTTPException(status_code=400, detail="Formato de fecha inválido. Usa YYYY-MM-DD")
 
     if team_id:
         team_exists = db.query(Team).filter(Team.team_id_comet == team_id).first()
         if not team_exists:
-            return {"error": f"Equipo con team_id_comet={team_id} no encontrado"}
+            raise HTTPException(status_code=404, detail=f"Equipo con team_id_comet={team_id} no encontrado")
         query = query.filter((HomeTeam.team_id_comet == team_id) | (AwayTeam.team_id_comet == team_id))
+
+    if round:
+        query = query.filter(Match.round == round)
 
     matches = query.order_by(Match.date).all()
 
     if not matches:
-        return {"message": "No se encontraron partidos con esos filtros"}
+        return []
 
     result = []
     for match in matches:
         home_team = db.query(Team).filter(Team.id == match.home_team_id).first()
         away_team = db.query(Team).filter(Team.id == match.away_team_id).first()
 
-        # Contar eventos para cada equipo
+        if not home_team or not away_team:
+            continue
+
         home_events_count = db.query(Event).filter(
             Event.match_id == match.id,
             Event.team_id == match.home_team_id

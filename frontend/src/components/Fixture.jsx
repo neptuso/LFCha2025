@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, CircularProgress, Alert, Tabs, Tab, Paper, Grid, Divider } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, CircularProgress, Alert, Tabs, Tab, Grid, Divider } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import axios from 'axios';
-
-//const API_BASE = 'http://localhost:8000';
-import { API_BASE } from '../services/api';
+import { fetchRounds, fetchMatches } from '../services/api';
 
 const getShieldUrl = (teamName) => {
   const shields = {
@@ -13,42 +10,37 @@ const getShieldUrl = (teamName) => {
     'VELEZ SARSFIELD (CHAJARI)': '/shields/velez.png',
     'CHACARITA (CHAJARI)': '/shields/chacarita.png',
     'MOCORETA': '/shields/mocoreta.png',
-    'SAN JOSE OBRERO': '/shields/san_jose.png',
-    'SAN FRANCISCO (CHAJARI)': '/shields/san_francisco.png',
-    'INDEPENDIENTE (CHAJARI)': '/shields/independiente.png',
+    'SAN JOSE OBRERO': '/shields/san_jose_obrero.png',
+    'SAN FRANCISCO': '/shields/san_francisco.png',
+    'INDEPENDIENTE (VDR)': '/shields/independiente.png',
     '1° DE MAYO (CHAJARI)': '/shields/primero_de_mayo.png',
-    'SANTA ROSA (CHAJARI)': '/shields/santa_rosa.png',
+    'SANTA ROSA': '/shields/santa_rosa.png',
     'FERROCARRIL': '/shields/ferrocarril.png',
     'SANTA ANA': '/shields/santa_ana.png',
-    'SAN CLEMENTE (CHAJARI)': '/shields/san_clemente.png',
+    'SAN CLEMENTE': '/shields/san_clemente.png',
     'LOS CONQUISTADORES': '/shields/los_conquistadores.png'
   };
   return shields[teamName] || '/shields/default.png';
 };
 
 const MatchRow = ({ match }) => (
-  <Box sx={{ my: 2, p: 1.5, borderRadius: 1, '&:hover': { backgroundColor: 'action.hover' } }}>
+  <Box sx={{ my: 1, p: 1.5, borderRadius: 1, '&:hover': { backgroundColor: 'action.hover' } }}>
     <Grid container alignItems="center" justifyContent="space-between">
-      {/* Equipos y Resultado */}
       <Grid item xs={10} container alignItems="center" component={RouterLink} to={`/match/${match.id}`} sx={{ textDecoration: 'none', color: 'inherit' }}>
         <Grid item xs={5} container alignItems="center" justifyContent="flex-end">
-          <Typography align="right" sx={{ mr: 1 }}>{match.home_team.name}</Typography>
+          <Typography align="right" sx={{ mr: 1, fontSize: { xs: '0.8rem', sm: '1rem' } }}>{match.home_team.name}</Typography>
           <img src={getShieldUrl(match.home_team.name)} alt={match.home_team.name} style={{ width: 24, height: 24 }} />
         </Grid>
-        
         <Grid item xs={2} align="center">
-          <Typography variant="h6" component="span" sx={{ px: 1, backgroundColor: 'background.paper', borderRadius: 1 }}>
+          <Typography variant="h6" component="span" sx={{ px: 1, borderRadius: 1 }}>
             {match.home_score ?? '-'} - {match.away_score ?? '-'}
           </Typography>
         </Grid>
-
         <Grid item xs={5} container alignItems="center">
           <img src={getShieldUrl(match.away_team.name)} alt={match.away_team.name} style={{ width: 24, height: 24, marginRight: 8 }} />
-          <Typography>{match.away_team.name}</Typography>
+          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>{match.away_team.name}</Typography>
         </Grid>
       </Grid>
-
-      {/* Info extra */}
       <Grid item xs={2} align="center">
          <Typography variant="caption" display="block">{new Date(match.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</Typography>
          <Typography variant="caption" color="text.secondary">{match.facility}</Typography>
@@ -58,61 +50,57 @@ const MatchRow = ({ match }) => (
 );
 
 export default function Fixture() {
-  const [matchesByRound, setMatchesByRound] = useState({});
-  const [sortedRounds, setSortedRounds] = useState([]);
+  const [rounds, setRounds] = useState([]);
   const [selectedRound, setSelectedRound] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [matches, setMatches] = useState([]);
+  const [loadingRounds, setLoadingRounds] = useState(true);
+  const [loadingMatches, setLoadingMatches] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchMatches = async () => {
+    const getRounds = async () => {
       try {
-        setLoading(true);
-        const response = await axios.get(`${API_BASE}/api/matches`);
-        
-        if (!response.data || response.data.length === 0) {
-            setMatchesByRound({});
-            setSortedRounds([]);
-            return;
+        setLoadingRounds(true);
+        const roundsData = await fetchRounds();
+        if (roundsData && roundsData.length > 0) {
+          setRounds(roundsData);
+          setSelectedRound(roundsData[0]);
         }
-
-        const grouped = response.data.reduce((acc, match) => {
-          const round = match.round || 'N/A';
-          if (!acc[round]) acc[round] = [];
-          acc[round].push(match);
-          return acc;
-        }, {});
-
-        const rounds = Object.keys(grouped).sort((a, b) => {
-            const numA = parseInt(a.match(/\d+/));
-            const numB = parseInt(b.match(/\d+/));
-            if (numA && numB) return numA - numB;
-            return a.localeCompare(b);
-        });
-
-        setMatchesByRound(grouped);
-        setSortedRounds(rounds);
-        if (rounds.length > 0) {
-          setSelectedRound(rounds[0]);
-        }
-
       } catch (err) {
-        setError('No se pudo cargar el fixture.');
+        setError('No se pudieron cargar las fechas.');
         console.error(err);
       } finally {
-        setLoading(false);
+        setLoadingRounds(false);
       }
     };
-
-    fetchMatches();
+    getRounds();
   }, []);
+
+  const getMatchesForRound = useCallback(async (round) => {
+    if (!round) return;
+    try {
+      setLoadingMatches(true);
+      setError(null);
+      const matchesData = await fetchMatches({ round });
+      setMatches(matchesData);
+    } catch (err) {
+      setError(`No se pudieron cargar los partidos para la ${round}.`);
+      console.error(err);
+    } finally {
+      setLoadingMatches(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    getMatchesForRound(selectedRound);
+  }, [selectedRound, getMatchesForRound]);
 
   const handleTabChange = (event, newValue) => {
     setSelectedRound(newValue);
   };
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
+  if (loadingRounds) return <CircularProgress />;
+  if (error && !loadingMatches) return <Alert severity="error">{error}</Alert>;
 
   return (
     <Box sx={{ p: 2, height: '100%' }}>
@@ -125,22 +113,28 @@ export default function Fixture() {
           scrollButtons="auto"
           aria-label="fixture rounds"
         >
-          {sortedRounds.map(round => (
+          {rounds.map(round => (
             <Tab label={round} value={round} key={round} />
           ))}
         </Tabs>
       </Box>
 
       <Box sx={{ mt: 2 }}>
-        {selectedRound && matchesByRound[selectedRound] ? (
-          matchesByRound[selectedRound].map((match, index) => (
-            <React.Fragment key={match.id}>
-              <MatchRow match={match} />
-              {index < matchesByRound[selectedRound].length - 1 && <Divider />}
-            </React.Fragment>
-          ))
+        {loadingMatches ? (
+          <CircularProgress />
+        ) : matches.length > 0 ? (
+          <Grid container spacing={2}>
+            {matches.map((match) => (
+              <Grid item xs={12} md={6} key={match.id}>
+                <MatchRow match={match} />
+                <Divider sx={{ mt: 1, display: { md: 'none' } }} />
+              </Grid>
+            ))}
+          </Grid>
         ) : (
-          <Typography sx={{ mt: 3, textAlign: 'center' }}>No hay partidos para esta fecha.</Typography>
+          <Typography sx={{ mt: 3, textAlign: 'center' }}>
+            {error || 'No hay partidos para esta fecha.'}
+          </Typography>
         )}
       </Box>
     </Box>

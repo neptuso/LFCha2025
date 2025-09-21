@@ -8,11 +8,17 @@ export const fetchStandings = async (competitionId) => {
   return response.data;
 };
 
-export const fetchMatches = async (date = '', teamId = '') => {
+export const fetchMatches = async ({ date = '', teamId = '', round = '' }) => {
   const params = new URLSearchParams();
   if (date) params.append('date', date);
   if (teamId) params.append('team_id', teamId);
+  if (round) params.append('round', round);
   const response = await axios.get(`${API_BASE}/api/matches?${params}`);
+  return response.data;
+};
+
+export const fetchRounds = async () => {
+  const response = await axios.get(`${API_BASE}/api/rounds`);
   return response.data;
 };
 

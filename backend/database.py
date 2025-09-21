@@ -1,10 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import create_engine, NullPool
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 from dotenv import load_dotenv
 
-# Cargar variables de entorno (por si usas .env en el futuro)
+# Cargar variables de entorno
 load_dotenv()
 
 # Definir la URL de la base de datos
@@ -12,7 +13,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Crear el motor de base de datos
 if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
-    engine = create_engine(DATABASE_URL)
+    # Usar NullPool para compatibilidad con PgBouncer (Supabase)
+    engine = create_engine(DATABASE_URL, poolclass=NullPool)
 else:
     print("ADVERTENCIA: No se encontró una DATABASE_URL de PostgreSQL. Usando SQLite local.")
     DATABASE_URL = "sqlite:///ligachajari.db"
