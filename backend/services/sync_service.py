@@ -80,7 +80,9 @@ def run_final_sync(zones_report_id: int = None):
 
         # --- PASO 1: SINCRONIZAR PARTIDOS ---
         print("\n--- PASO 1: Sincronizando Partidos de 2025 ---")
-        existing_match_uids = {m.match_id_comet for m in db.query(Match.match_id_comet).all()}
+        print("   -> OMITIDO POR PRUEBAS.")
+        """
+        existing_match_uids = {m.match_id_comet for m in db.query(Match.match_id_comet).yield_per(1000)}
         page = 0
         while True:
             url = f"{BASE_URL}/{MATCHES_TEMPLATE_ID}/{page}/999/?API_KEY={API_KEY}"
@@ -121,26 +123,26 @@ def run_final_sync(zones_report_id: int = None):
             print(f"   -> Página {page} de partidos procesada.")
             if page >= data.get("lastPage", 0): break
             page += 1
+
+            if page % 10 == 0:
+                print(f"   ->  menjaga koneksi... Guardando lote de partidos en la página {page}.")
+                db.commit()
         print(f"   -> Se añadieron {total_new_matches} partidos nuevos a la sesión.")
+        """
+
+        # --- PASO 1.2: COMMIT Y REAPERTURA DE SESIÓN para evitar timeout ---
+        print("\n💾 Guardando cambios y refrescando la sesión de BD antes de Zonas...")
+        db.commit()
+        db.close()
+        db = SessionLocal()
+        print("   -> Sesión de BD refrescada.")
 
         # --- PASO 1.5: Sincronizando Zonas (si existen) ---
         print("\n--- PASO 1.5: Sincronizando Zonas (si existen) ---")
         if not ZONES_API_KEY:
             print("⚠️  Advertencia: COMET_API_KEY_2 no está configurada. Saltando sincronización de zonas.")
         else:
-            # Hacemos commit de los partidos nuevos para poder consultarlos y actualizarlos.
-            if total_new_matches > 0:
-                print("   -> Guardando partidos nuevos antes de asignar zonas...")
-                db.commit()
-
-            # Mapeamos TODOS los partidos de la temporada para poder actualizarlos
-            match_map = {
-                m.match_id_comet: m.id
-                for m in db.query(Match.match_id_comet, Match.id)
-                .join(Competition)
-                .filter(Competition.season == "2025")
-                .all()
-            }
+            match_map = {m.match_id_comet: m.id for m in db.query(Match.match_id_comet, Match.id).join(Competition).filter(Competition.season == "2025").yield_per(1000)}
             
             if not match_map:
                 print("   -> No se encontraron partidos de la temporada 2025 para actualizar zonas.")
@@ -156,48 +158,51 @@ def run_final_sync(zones_report_id: int = None):
                         response.raise_for_status()
                         data = response.json()
                         results = data.get("results", [])
-                        if not results:
-                            break
+                        if not results: break
 
                         for row in results:
                             match_id_comet = row.get("matchId")
                             if match_id_comet in match_map:
                                 raw_zone_name = row.get("name", "")
                                 parsed_zone = None
-                                
-                                # Nueva lógica de extracción más robusta
                                 if " - " in raw_zone_name:
-                                    # Divide el string por " - " y toma el último elemento.
-                                    # ej: "PRIMERA DIVISIÓN 2025 - ZONA \"D\"" -> "ZONA \"D\""
-                                    # ej: "PRIMERA DIVISIÓN 2025 - INTERZONAL" -> "INTERZONAL"
                                     parsed_zone = raw_zone_name.split(" - ")[-1].strip()
 
                                 if parsed_zone:
                                     match_db_id = match_map[match_id_comet]
                                     match_to_update = db.query(Match).filter(Match.id == match_db_id).first()
-                                    # Actualizamos solo si el valor es diferente
                                     if match_to_update and match_to_update.zone != parsed_zone:
                                         match_to_update.zone = parsed_zone
-                                        db.add(match_to_update)
                                         updated_zones_count += 1
                                         changes_made = True
                         
                         print(f"   -> Página {page} de zonas procesada.")
-                        if page >= data.get("lastPage", 0):
-                            break
+                        if page >= data.get("lastPage", 0): break
                         page += 1
+                        
+                        if page % 10 == 0:
+                            print(f"   ->  menjaga koneksi... Guardando lote de zonas en la página {page}.")
+                            db.commit()
+
                     except requests.exceptions.RequestException as e:
-                        print(f"   -> ❌ Error al contactar la API de Zonas: {e}. Saltando el resto de la sincronización de zonas.")
+                        print(f"   -> ❌ Error al contactar la API de Zonas: {e}. Saltando.")
                         break
                 print(f"   -> Se actualizaron las zonas de {updated_zones_count} partidos.")
+
+        # --- PASO 1.8: COMMIT Y REAPERTURA DE SESIÓN para evitar timeout ---
+        print("\n💾 Guardando cambios y refrescando la sesión de BD antes de Eventos...")
+        db.commit()
+        db.close()
+        db = SessionLocal()
+        print("   -> Sesión de BD refrescada.")
 
         # --- PASO 2: SINCRONIZAR EVENTOS ---
         print("\n--- PASO 2: Sincronizando Eventos de 2025 ---")
         if not EVENTS_API_KEY:
             print("⚠️  Advertencia: COMET_API_KEY_1 no está configurada. Saltando sincronización de eventos.")
         else:
-            matches_cache = {m.match_id_comet: m.id for m in db.query(Match.match_id_comet, Match.id).all()}
-            teams_cache.update({t.team_id_comet: t.id for t in db.query(Team.team_id_comet, Team.id).all()})
+            matches_cache = {m.match_id_comet: m.id for m in db.query(Match.match_id_comet, Match.id).yield_per(1000)}
+            teams_cache.update({t.team_id_comet: t.id for t in db.query(Team.team_id_comet, Team.id).yield_per(1000)})
             matches_with_new_events = set()
             page = 0
             while True:
@@ -210,30 +215,19 @@ def run_final_sync(zones_report_id: int = None):
 
                 for row in results:
                     if row.get("season") != "2025": continue
-                    
                     match_id_from_event = row.get("matchId")
-                    
-
-                    
-
                     match_db_id = matches_cache.get(match_id_from_event)
-                    if not match_db_id:
-                        print(f"    -> Ignorado: El Match ID {match_id_from_event} del evento no existe en nuestra DB.")
-                        continue
+                    if not match_db_id: continue
 
                     team_db_id = teams_cache.get(row.get("teamId"))
                     if not team_db_id: continue
                     player = _get_or_create_player(db, row, team_db_id)
                     if not player: continue
 
-                    existing_event = db.query(Event).filter_by(
-                        match_id=match_db_id,
-                        player_id=player.id,
-                        event_type=row.get("matchEventType"),
-                        minute=row.get("minute"),
-                        phase=row.get("phase")
-                    ).first()
+                    minute_from_api = row.get("minute")
+                    sanitized_minute = int(minute_from_api) if isinstance(minute_from_api, int) or (isinstance(minute_from_api, str) and minute_from_api.isdigit()) else None
 
+                    existing_event = db.query(Event).filter_by(match_id=match_db_id, player_id=player.id, event_type=row.get("matchEventType"), minute=sanitized_minute, phase=row.get("phase")).first()
                     is_home_correct = str(row.get("home")).lower() in ["sí", "yes"]
 
                     if existing_event:
@@ -241,19 +235,8 @@ def run_final_sync(zones_report_id: int = None):
                             existing_event.is_home = is_home_correct
                             changes_made = True
                             db.add(existing_event)
-                            print(f"    -> Actualizado is_home para evento en match {match_db_id}, minuto {row.get('minute')}")
                     else:
-                        new_event = Event(
-                            match_id=match_db_id,
-                            player_id=player.id,
-                            team_id=team_db_id,
-                            event_type=row.get("matchEventType"),
-                            sub_type=row.get("eventSubType"),
-                            minute=row.get("minute"),
-                            phase=row.get("phase"),
-                            is_home=is_home_correct,
-                            stoppage_time=row.get("stoppageTime")
-                        )
+                        new_event = Event(match_id=match_db_id, player_id=player.id, team_id=team_db_id, event_type=row.get("matchEventType"), sub_type=row.get("eventSubType"), minute=sanitized_minute, phase=row.get("phase"), is_home=is_home_correct, stoppage_time=row.get("stoppageTime"))
                         db.add(new_event)
                         total_new_events += 1
                         changes_made = True
@@ -262,6 +245,11 @@ def run_final_sync(zones_report_id: int = None):
                 print(f"   -> Página {page} de eventos procesada.")
                 if page >= data.get("lastPage", 0): break
                 page += 1
+
+                if page % 10 == 0:
+                    print(f"   ->  menjaga koneksi... Guardando lote de eventos en la página {page}.")
+                    db.commit()
+
             print(f"   -> Se añadieron {total_new_events} eventos nuevos a la sesión.")
 
         # --- PASO 2.5: Actualizando Marcadores y Estados Post-Eventos ---
@@ -273,21 +261,10 @@ def run_final_sync(zones_report_id: int = None):
             updated_scores_count = 0
             for match_id in matches_with_new_events:
                 match = db.query(Match).filter_by(id=match_id).first()
-                if not match:
-                    continue
+                if not match: continue
 
-                # Recalcular goles desde los eventos en la sesión actual
-                home_goals = db.query(Event).filter(
-                    Event.match_id == match.id,
-                    Event.event_type.in_(['Goal', 'Own goal', 'Penalty']),
-                    Event.team_id == match.home_team_id
-                ).count()
-
-                away_goals = db.query(Event).filter(
-                    Event.match_id == match.id,
-                    Event.event_type.in_(['Goal', 'Own goal', 'Penalty']),
-                    Event.team_id == match.away_team_id
-                ).count()
+                home_goals = db.query(Event).filter(Event.match_id == match.id, Event.event_type.in_(['Goal', 'Own goal', 'Penalty']), Event.team_id == match.home_team_id).count()
+                away_goals = db.query(Event).filter(Event.match_id == match.id, Event.event_type.in_(['Goal', 'Own goal', 'Penalty']), Event.team_id == match.away_team_id).count()
                 
                 score_is_inconsistent = (match.home_score != home_goals) or (match.away_score != away_goals)
                 status_is_inconsistent = (home_goals + away_goals > 0) and (match.status in ['SCHEDULED', 'ENTERED'])
@@ -295,9 +272,7 @@ def run_final_sync(zones_report_id: int = None):
                 if score_is_inconsistent or status_is_inconsistent:
                     match.home_score = home_goals
                     match.away_score = away_goals
-                    if status_is_inconsistent:
-                        match.status = 'PLAYED'
-                    
+                    if status_is_inconsistent: match.status = 'PLAYED'
                     db.add(match)
                     updated_scores_count += 1
                     changes_made = True
@@ -306,7 +281,7 @@ def run_final_sync(zones_report_id: int = None):
 
         # --- PASO 3: GUARDAR TODO ---
         if changes_made:
-            print(f"\n💾 Guardando {total_new_matches} partidos y {total_new_events} eventos nuevos...")
+            print(f"\n💾 Guardando cambios finales...")
             db.commit()
             print("✅ COMMIT EXITOSO.")
         else:

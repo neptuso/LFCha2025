@@ -8,11 +8,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Definir la URL de la base de datos
-DATABASE_URL = "sqlite:///ligachajari.db"
-
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Crear el motor de base de datos
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
+    engine = create_engine(DATABASE_URL)
+else:
+    print("ADVERTENCIA: No se encontró una DATABASE_URL de PostgreSQL. Usando SQLite local.")
+    DATABASE_URL = "sqlite:///ligachajari.db"
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
 # Crear una sesión local
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

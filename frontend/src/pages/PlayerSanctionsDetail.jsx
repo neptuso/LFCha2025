@@ -20,7 +20,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 
 //const API_BASE = 'http://localhost:8000';
-const API_BASE = 'https://lfcha2025.onrender.com';
+import { API_BASE } from '../services/api';
 
 const CardIcon = ({ eventType }) => {
     const color = eventType === 'Yellow card' ? '#ffc107' : 'error.main';

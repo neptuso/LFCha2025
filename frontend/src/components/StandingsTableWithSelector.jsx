@@ -13,7 +13,7 @@ import {
 import axios from 'axios';
 import StandingsTable from './StandingsTable'; // Asegúrate de que la ruta sea correcta
 
-const API_BASE = 'https://lfcha2025.onrender.com';
+import { API_BASE } from '../services/api';
 //const API_BASE = 'http://localhost:8000';
 
 const StandingsTableWithSelector = () => {

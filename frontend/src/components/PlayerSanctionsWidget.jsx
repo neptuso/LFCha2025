@@ -15,7 +15,7 @@ import {
 import axios from 'axios';
 
 //const API_BASE = 'http://localhost:8000';
-const API_BASE = 'https://lfcha2025.onrender.com';
+import { API_BASE } from '../services/api';
 
 // Asignar puntos a las tarjetas para un ranking más significativo
 const getCardPoints = (player) => {

@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 
 //const API_BASE = 'http://localhost:8000';
-const API_BASE = 'https://lfcha2025.onrender.com';
+import { API_BASE } from '../services/api';
 
 const getShieldUrl = (teamName) => {
   const shields = {

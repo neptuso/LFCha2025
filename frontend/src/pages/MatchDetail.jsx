@@ -21,7 +21,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; // Icono para Sustitu
 import axios from 'axios';
 
 //const API_BASE = 'http://localhost:8000';
-const API_BASE = 'https://lfcha2025.onrender.com';
+import { API_BASE } from '../services/api';
 
 // Este mapa de escudos ahora se obtiene de la DB, pero lo mantenemos como fallback
 const getShieldUrl = (teamName) => {

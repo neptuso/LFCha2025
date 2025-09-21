@@ -1,32 +1,51 @@
-# Archivos de base de datos
-
-
-# Directorios de residuos
-residuos/
-
-# Backend
+# Entornos Virtuales de Python
 venv/
-__pycache__/
-*.pyc
-.env
-.txt
+/venv/
+.venv/
+env/
+.env/
 
-# Frontend
+# Bases de datos locales
+# Ignora explícitamente cualquier archivo de base de datos para evitar subir datos locales.
+*.db
+*.sqlite3
+ligachajari.db
+
+# Archivos de entorno
+# Ignora todos los archivos .env, pero permite que los de ejemplo se suban.
+.env
+.env.*
+!.env.example
+
+# Archivos compilados y cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Dependencias y artefactos de build de Frontend
 node_modules/
 dist/
 build/
+.next/
 
-# Sistema
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Archivos del sistema operativo
 .DS_Store
 Thumbs.db
 
-# Archivos de respaldo de la sincronización
-backend/services/sync_service_30B.py
-backend/services/sync_service_ba.py
+# Archivos de configuración de IDEs
+.vscode/
+!.vscode/settings.json
+.idea/
 
-# Archivos de entorno con claves
-frontend/.env.development
-frontend/.env.production
-
-# PROJECT DE EJEMPLO
+# Directorios de residuos y backups
+residuos/
 proyecto_anterior/
+*.bak
+*.txt
