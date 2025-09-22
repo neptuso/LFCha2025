@@ -2,52 +2,38 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, CircularProgress, Alert, Tabs, Tab, Grid, Divider } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { fetchRounds, fetchMatches } from '../services/api';
+import { getTeamDisplay } from '../utils/teamDisplay'; // Importar la utilidad
 
-const getShieldUrl = (teamName) => {
-  const shields = {
-    'TIRO FEDERAL (CHAJARI)': '/shields/tiro_federal.png',
-    'LA FLORIDA (CHAJARI)': '/shields/la_florida.png',
-    'VELEZ SARSFIELD (CHAJARI)': '/shields/velez.png',
-    'CHACARITA (CHAJARI)': '/shields/chacarita.png',
-    'MOCORETA': '/shields/mocoreta.png',
-    'SAN JOSE OBRERO': '/shields/san_jose_obrero.png',
-    'SAN FRANCISCO': '/shields/san_francisco.png',
-    'INDEPENDIENTE (VDR)': '/shields/independiente.png',
-    '1° DE MAYO (CHAJARI)': '/shields/primero_de_mayo.png',
-    'SANTA ROSA': '/shields/santa_rosa.png',
-    'FERROCARRIL': '/shields/ferrocarril.png',
-    'SANTA ANA': '/shields/santa_ana.png',
-    'SAN CLEMENTE': '/shields/san_clemente.png',
-    'LOS CONQUISTADORES': '/shields/los_conquistadores.png'
-  };
-  return shields[teamName] || '/shields/default.png';
-};
+const MatchRow = ({ match }) => {
+  const homeDisplay = getTeamDisplay(match.home_team.name);
+  const awayDisplay = getTeamDisplay(match.away_team.name);
 
-const MatchRow = ({ match }) => (
-  <Box sx={{ my: 1, p: 1.5, borderRadius: 1, '&:hover': { backgroundColor: 'action.hover' } }}>
-    <Grid container alignItems="center" justifyContent="space-between">
-      <Grid item xs={10} container alignItems="center" component={RouterLink} to={`/match/${match.id}`} sx={{ textDecoration: 'none', color: 'inherit' }}>
-        <Grid item xs={5} container alignItems="center" justifyContent="flex-end">
-          <Typography align="right" sx={{ mr: 1, fontSize: { xs: '0.8rem', sm: '1rem' } }}>{match.home_team.name}</Typography>
-          <img src={getShieldUrl(match.home_team.name)} alt={match.home_team.name} style={{ width: 24, height: 24 }} />
+  return (
+    <Box sx={{ my: 1, p: 1.5, borderRadius: 1, '&:hover': { backgroundColor: 'action.hover' } }}>
+      <Grid container alignItems="center" justifyContent="space-between">
+        <Grid item xs={10} container alignItems="center" component={RouterLink} to={`/match/${match.id}`} sx={{ textDecoration: 'none', color: 'inherit' }}>
+          <Grid item xs={5} container alignItems="center" justifyContent="flex-end">
+            <Typography align="right" sx={{ mr: 1, fontSize: { xs: '0.8rem', sm: '1rem' } }}>{match.home_team.name}</Typography>
+            <img src={homeDisplay.shield} alt={match.home_team.name} style={{ width: 24, height: 24 }} />
+          </Grid>
+          <Grid item xs={2} align="center">
+            <Typography variant="h6" component="span" sx={{ px: 1, borderRadius: 1 }}>
+              {match.home_score ?? '-'} - {match.away_score ?? '-'}
+            </Typography>
+          </Grid>
+          <Grid item xs={5} container alignItems="center">
+            <img src={awayDisplay.shield} alt={match.away_team.name} style={{ width: 24, height: 24, marginRight: 8 }} />
+            <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>{match.away_team.name}</Typography>
+          </Grid>
         </Grid>
         <Grid item xs={2} align="center">
-          <Typography variant="h6" component="span" sx={{ px: 1, borderRadius: 1 }}>
-            {match.home_score ?? '-'} - {match.away_score ?? '-'}
-          </Typography>
-        </Grid>
-        <Grid item xs={5} container alignItems="center">
-          <img src={getShieldUrl(match.away_team.name)} alt={match.away_team.name} style={{ width: 24, height: 24, marginRight: 8 }} />
-          <Typography sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>{match.away_team.name}</Typography>
+           <Typography variant="caption" display="block">{new Date(match.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</Typography>
+           <Typography variant="caption" color="text.secondary">{match.facility}</Typography>
         </Grid>
       </Grid>
-      <Grid item xs={2} align="center">
-         <Typography variant="caption" display="block">{new Date(match.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</Typography>
-         <Typography variant="caption" color="text.secondary">{match.facility}</Typography>
-      </Grid>
-    </Grid>
-  </Box>
-);
+    </Box>
+  );
+};
 
 export default function Fixture() {
   const [rounds, setRounds] = useState([]);

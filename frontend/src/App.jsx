@@ -24,6 +24,7 @@ import TournamentDashboard from './pages/TournamentDashboard';
 import PlayerSanctions from './pages/PlayerSanctions';
 import PlayerGoals from './pages/PlayerGoals.jsx';
 import PlayerSanctionsDetail from './pages/PlayerSanctionsDetail';
+import HomeDashboard from './pages/HomeDashboard'; // Importar el nuevo dashboard
 
 function App() {
 
@@ -114,6 +115,7 @@ function App() {
         
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/home-beta" element={<HomeDashboard />} /> {/* Ruta para el nuevo dashboard */}
           <Route path="/matches" element={<MatchesPage />} />
           <Route path="/calendar" element={<CalendarView />} />
           <Route path="/match/:id" element={<MatchDetail />} />

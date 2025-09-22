@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -13,57 +13,49 @@ import {
   ListItemText,
   Divider,
   Tooltip,
-  Avatar
+  Avatar,
+  Button,
+  IconButton
 } from '@mui/material';
-import SportsSoccerIcon from '@mui/icons-material/SportsSoccer'; // Icono para Gol
-import StyleIcon from '@mui/icons-material/Style'; // Icono para Tarjetas
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; // Icono para Sustitución
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
+import StyleIcon from '@mui/icons-material/Style';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import axios from 'axios';
-
-//const API_BASE = 'http://localhost:8000';
 import { API_BASE } from '../services/api';
-
-// Este mapa de escudos ahora se obtiene de la DB, pero lo mantenemos como fallback
-const getShieldUrl = (teamName) => {
-  const shields = {
-    'TIRO FEDERAL (CHAJARI)': '/shields/tiro_federal.png',
-    'LA FLORIDA (CHAJARI)': '/shields/la_florida.png',
-    'VELEZ SARSFIELD (CHAJARI)': '/shields/velez.png',
-    'CHACARITA (CHAJARI)': '/shields/chacarita.png',
-    'MOCORETA': '/shields/mocoreta.png',
-    'SAN JOSE OBRERO': '/shields/san_jose_obrero.png',
-    'SAN FRANCISCO (CHAJARI)': '/shields/san_francisco.png',
-    'INDEPENDIENTE (CHAJARI)': '/shields/independiente.png',
-    '1° DE MAYO (CHAJARI)': '/shields/prim_mayo.png',
-    'SANTA ROSA (CHAJARI)': '/shields/santa_rosa.png',
-    'FERROCARRIL': '/shields/ferrocarril.png',
-    'SANTA ANA': '/shields/santa_ana.png',
-    'SAN CLEMENTE (CHAJARI)': '/shields/san_clemente.png',
-    'LOS CONQUISTADORES': '/shields/default.png'
-  };
-  return shields[teamName] || '/shields/default.png';
-};
+import { getTeamDisplay } from '../utils/teamDisplay';
 
 // --- SUB-COMPONENTES DE DISEÑO ---
 
-const MatchHeader = ({ match }) => (
-  <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
-    <Grid container alignItems="center" justifyContent="space-around">
-      <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Avatar src={getShieldUrl(match.home_team)} alt={match.home_team} sx={{ width: 80, height: 80, mb: 1 }} />
-        <Typography variant="h6" align="center">{match.home_team}</Typography>
+const MatchHeader = ({ match }) => {
+  const homeDisplay = getTeamDisplay(match.home_team);
+  const awayDisplay = getTeamDisplay(match.away_team);
+  const matchDate = new Date(match.date).toLocaleDateString('es-AR', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+
+  return (
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mb: 3, textAlign: 'center' }}>
+      <Grid container alignItems="center" justifyContent="space-around">
+        <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Avatar src={homeDisplay.shield} alt={match.home_team} sx={{ width: 80, height: 80, mb: 1 }} />
+          <Typography variant="h6" align="center">{homeDisplay.abbr}</Typography>
+        </Grid>
+        <Grid item xs={4}>
+          <Typography variant="h2" fontWeight="bold">{`${match.home_score ?? '?'} - ${match.away_score ?? '?'}`}</Typography>
+          <Typography variant="caption" color="text.secondary" display="block">{match.status}</Typography>
+        </Grid>
+        <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Avatar src={awayDisplay.shield} alt={match.away_team} sx={{ width: 80, height: 80, mb: 1 }} />
+          <Typography variant="h6" align="center">{awayDisplay.abbr}</Typography>
+        </Grid>
       </Grid>
-      <Grid item xs={4} sx={{ textAlign: 'center' }}>
-        <Typography variant="h2" fontWeight="bold">{`${match.home_score ?? '?'} - ${match.away_score ?? '?'}`}</Typography>
-        <Typography variant="caption" color="text.secondary">{match.status}</Typography>
-      </Grid>
-      <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Avatar src={getShieldUrl(match.away_team)} alt={match.away_team} sx={{ width: 80, height: 80, mb: 1 }} />
-        <Typography variant="h6" align="center">{match.away_team}</Typography>
-      </Grid>
-    </Grid>
-  </Paper>
-);
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+        {matchDate}
+      </Typography>
+    </Paper>
+  );
+};
 
 const EventList = ({ events, homeTeamName, awayTeamName }) => {
     const keyEvents = events
@@ -86,7 +78,7 @@ const EventList = ({ events, homeTeamName, awayTeamName }) => {
             <ListItemIcon sx={{ minWidth: 36 }}>{getIcon(event)}</ListItemIcon>
             <ListItemText 
                 primary={`${event.minute}' ${event.player}`}
-                secondary={event.type === 'Substitution' ? `Entra por ${event.second_player_id}` : event.sub_type}
+                secondary={event.type === 'Substitution' ? `Sale ${event.player_out_name}` : event.sub_type}
             />
         </ListItem>
     );
@@ -95,12 +87,10 @@ const EventList = ({ events, homeTeamName, awayTeamName }) => {
         <Paper elevation={1} sx={{ p: 2, mt: 3, borderRadius: 2 }}>
             <Typography variant="h6" gutterBottom align="center">Eventos del Partido</Typography>
             <Grid container spacing={2}>
-                {/* Columna Local */}
                 <Grid item xs={6}>
                     <Typography variant="subtitle1" fontWeight="bold">{homeTeamName}</Typography>
                     <List dense>{homeEvents.map(renderEvent)}</List>
                 </Grid>
-                {/* Columna Visitante */}
                 <Grid item xs={6}>
                     <Typography variant="subtitle1" fontWeight="bold">{awayTeamName}</Typography>
                     <List dense>{awayEvents.map(renderEvent)}</List>
@@ -114,6 +104,7 @@ const EventList = ({ events, homeTeamName, awayTeamName }) => {
 
 export default function MatchDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [match, setMatch] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -139,6 +130,11 @@ export default function MatchDetail() {
 
   return (
     <Container maxWidth="md" sx={{ my: 4 }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+          Volver
+        </Button>
+      </Box>
       <MatchHeader match={match} />
       <EventList events={events} homeTeamName={match.home_team} awayTeamName={match.away_team} />
     </Container>

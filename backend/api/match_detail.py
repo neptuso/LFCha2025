@@ -35,7 +35,7 @@ def get_match_detail(match_id_comet: int, db: Session = Depends(get_db)):
         player = db.query(Player).filter(Player.id == event.player_id).first()
         team = db.query(Team).filter(Team.id == event.team_id).first()
 
-        result["events"].append({
+        event_data = {
             "type": event.event_type,
             "minute": event.minute,
             "phase": event.phase,
@@ -45,6 +45,13 @@ def get_match_detail(match_id_comet: int, db: Session = Depends(get_db)):
             "sub_type": event.sub_type,
             "stoppage_time": event.stoppage_time,
             "accumulated_yellow": event.accumulated_yellow
-        })
+        }
+
+        # Si es una sustitución, buscar el nombre del segundo jugador
+        if event.event_type == 'Substitution' and event.second_player_id:
+            player_out = db.query(Player).filter(Player.id == event.second_player_id).first()
+            event_data['player_out_name'] = player_out.name if player_out else "Desconocido"
+        
+        result["events"].append(event_data)
 
     return result
