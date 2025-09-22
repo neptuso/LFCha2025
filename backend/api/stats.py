@@ -1,6 +1,5 @@
-
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func, case
 from database import get_db
 from models import Event, Match, Team, Player, TeamDisplay
@@ -99,38 +98,54 @@ def get_avg_goals_per_match(competition_id: int, db: Session = Depends(get_db)):
 
 @router.get("/streaks")
 def get_streaks(competition_id: int, db: Session = Depends(get_db)):
-    matches = db.query(Match).filter(Match.competition_id == competition_id).order_by(Match.date).all()
+    """
+    Calcula las rachas de partidos ganados e invictos para todos los equipos de una competición.
+    Esta versión está optimizada y tiene la lógica de rachas corregida.
+    """
+    HomeTeam = aliased(Team, name="home_team")
+    AwayTeam = aliased(Team, name="away_team")
+
+    matches_with_teams = db.query(
+        Match,
+        HomeTeam.name.label('home_team_name'),
+        AwayTeam.name.label('away_team_name')
+    ).join(HomeTeam, Match.home_team_id == HomeTeam.id)\
+     .join(AwayTeam, Match.away_team_id == AwayTeam.id)\
+     .filter(Match.competition_id == competition_id)\
+     .order_by(Match.date.asc())\
+     .all()
+
+    # Primero, agrupar todos los partidos por equipo
+    team_matches = {}
+    for match, home_team_name, away_team_name in matches_with_teams:
+        if home_team_name not in team_matches: team_matches[home_team_name] = []
+        if away_team_name not in team_matches: team_matches[away_team_name] = []
+        team_matches[home_team_name].append({"match": match, "location": "home"})
+        team_matches[away_team_name].append({"match": match, "location": "away"})
+
     streaks = {}
-    
-    for m in matches:
-        if m.home_score is None or m.away_score is None: 
-            continue
+    # Ahora, calcular las rachas para cada equipo iterando sus partidos
+    for team_name, matches in team_matches.items():
+        current_streaks = {"ganando": 0, "invicto": 0}
+        for game in sorted(matches, key=lambda x: x['match'].date):
+            match = game['match']
+            if match.home_score is None or match.away_score is None:
+                continue
+
+            is_home = (game["location"] == "home")
+            score = match.home_score if is_home else match.away_score
+            opponent_score = match.away_score if is_home else match.home_score
+
+            if score > opponent_score: # Victoria
+                current_streaks["ganando"] += 1
+                current_streaks["invicto"] += 1
+            elif score == opponent_score: # Empate
+                current_streaks["ganando"] = 0
+                current_streaks["invicto"] += 1
+            else: # Derrota
+                current_streaks["ganando"] = 0
+                current_streaks["invicto"] = 0
         
-        home_team = db.query(Team).get(m.home_team_id)
-        away_team = db.query(Team).get(m.away_team_id)
-        
-        if home_team:
-            if home_team.name not in streaks: 
-                streaks[home_team.name] = {"ganando": 0, "invicto": 0}
-            if m.home_score > m.away_score:  # type: ignore
-                streaks[home_team.name]["ganando"] += 1
-                streaks[home_team.name]["invicto"] += 1
-            elif m.home_score == m.away_score:  # pyright: ignore[reportGeneralTypeIssues]
-                streaks[home_team.name]["invicto"] += 1
-            else: 
-                streaks[home_team.name]["ganando"] = 0
-                streaks[home_team.name]["invicto"] = 0
+        streaks[team_name] = current_streaks
             
-        if away_team:
-            if away_team.name not in streaks: 
-                streaks[away_team.name] = {"ganando": 0, "invicto": 0}
-            if m.away_score > m.home_score:  # pyright: ignore[reportGeneralTypeIssues]
-                streaks[away_team.name]["ganando"] += 1
-                streaks[away_team.name]["invicto"] += 1
-            elif m.away_score == m.home_score:  # pyright: ignore[reportGeneralTypeIssues]
-                streaks[away_team.name]["invicto"] += 1
-            else: 
-                streaks[away_team.name]["ganando"] = 0
-                streaks[away_team.name]["invicto"] = 0
-    
     return streaks

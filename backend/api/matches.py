@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api")
 @router.get("/rounds")
 def get_rounds(db: Session = Depends(get_db)):
     """
-    Obtiene una lista ordenada de todas las rondas (fechas) para la competición principal.
+    Obtiene una lista ordenada de todas las rondas y la última ronda jugada.
     """
     competition = db.query(Competition).filter(
         Competition.name == "PRIMERA DIVISIÓN",
@@ -18,18 +18,26 @@ def get_rounds(db: Session = Depends(get_db)):
     ).first()
     
     if not competition:
-        raise HTTPException(status_code=404, detail="Competición PRIMERA DIVISIÓN 2025 no encontrada")
+        raise HTTPException(status_code=404, detail="Competición no encontrada")
 
+    # Obtener todas las rondas únicas
     rounds_query = db.query(Match.round).filter(Match.competition_id == competition.id).distinct().all()
-    
-    # Extraer el string de la tupla y convertir a entero para ordenar
     rounds_tuples = [r[0] for r in rounds_query if r[0] is not None]
-    
-    # Ordenar numéricamente basado en el número de la ronda
-    # Esto asegura que "Fecha 10" venga después de "Fecha 9"
-    rounds_sorted = sorted(rounds_tuples, key=lambda x: int("".join(filter(str.isdigit, x)) or 0))
+    all_rounds_sorted = sorted(rounds_tuples, key=lambda x: int("".join(filter(str.isdigit, x)) or 0))
 
-    return rounds_sorted
+    # Encontrar la última ronda con al menos un partido jugado
+    latest_played_round_query = db.query(Match.round)\
+        .filter(Match.competition_id == competition.id)\
+        .filter(Match.status == 'played')\
+        .order_by(Match.date.desc())\
+        .first()
+    
+    last_played_round = latest_played_round_query[0] if latest_played_round_query else None
+
+    return {
+        "all_rounds": all_rounds_sorted,
+        "last_played_round": last_played_round
+    }
 
 @router.get("/matches")
 def get_matches(

@@ -1,29 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, CircularProgress, Alert } from '@mui/material';
-import { API_BASE } from '../../services/api';
-import { getTeamDisplay } from '../../utils/teamDisplay'; // Importar la nueva utilidad
-import axios from 'axios';
+import { getTeamDisplay } from '../../utils/teamDisplay';
 
-export default function TopStandingsWidget() {
-  const [standings, setStandings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchStandingsData = async () => {
-      try {
-        const response = await axios.get(`${API_BASE}/api/standings-extended/1`);
-        setStandings(response.data.slice(0, 5));
-      } catch (err) {
-        setError('No se pudo cargar la tabla de posiciones.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStandingsData();
-  }, []);
+export default function TopStandingsWidget({ standings, loading, error }) {
 
   if (loading) return <CircularProgress />;
   if (error) return <Alert severity="error">{error}</Alert>;
@@ -43,7 +22,7 @@ export default function TopStandingsWidget() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {standings.map((team, index) => {
+          {standings && standings.map((team, index) => {
             const display = getTeamDisplay(team.name);
             return (
               <TableRow key={team.team_id}>

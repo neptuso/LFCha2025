@@ -47,10 +47,11 @@ export default function Fixture() {
     const getRounds = async () => {
       try {
         setLoadingRounds(true);
-        const roundsData = await fetchRounds();
-        if (roundsData && roundsData.length > 0) {
-          setRounds(roundsData);
-          setSelectedRound(roundsData[0]);
+        const roundsData = await fetchRounds(); // Recibe { all_rounds, last_played_round }
+        if (roundsData && roundsData.all_rounds && roundsData.all_rounds.length > 0) {
+          setRounds(roundsData.all_rounds);
+          // Seleccionar la última fecha jugada, o la primera como fallback
+          setSelectedRound(roundsData.last_played_round || roundsData.all_rounds[0]);
         }
       } catch (err) {
         setError('No se pudieron cargar las fechas.');

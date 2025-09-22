@@ -22,6 +22,21 @@ export const fetchRounds = async () => {
   return response.data;
 };
 
+export const fetchCalendarMatches = async (year, month) => {
+  const response = await axios.get(`${API_BASE}/api/calendar-matches?year=${year}&month=${month}`);
+  return response.data;
+};
+
+export const fetchDashboardData = async () => {
+  const response = await axios.get(`${API_BASE}/api/main-dashboard-data`);
+  return response.data;
+};
+
+export const fetchCalendarView = async () => {
+  const response = await axios.get(`${API_BASE}/api/calendar-view`);
+  return response.data;
+};
+
 export const fetchAllCompetitions = async () => {
   const response = await axios.get(`${API_BASE}/api/competitions`);
   return response.data;
